@@ -1,3 +1,5 @@
+const moment = require("moment")
+
 //customer function
 async function getAllCustomer(pg_client){
     let query
@@ -436,6 +438,15 @@ async function deleteBooking(pg_client,id){
 }
 
 
+function changeDateToUnix(result){
+    for(var i in result){
+        result[i]["start_time"] = moment(result[i]["start_time"]).unix();
+        result[i]["end_time"] = moment(result[i]["end_time"]).unix();
+    }
+    return result
+}
+
+
 exports.allCustomer = getAllCustomer
 exports.customerById = getCustomerById
 exports.addCustomer = addCustomer
@@ -453,3 +464,5 @@ exports.viewbookingById = getBookingById
 exports.addBooking = addBooking
 exports.updateBooking = updateBooking
 exports.deleteBooking = deleteBooking
+
+exports.convertToUnix = changeDateToUnix
