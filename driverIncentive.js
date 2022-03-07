@@ -1,18 +1,17 @@
 const express = require('express')
 const router = express.Router()
 
-const allCustomer = require('./function').allCustomer
-const customerById = require('./function').customerById
-const addCustomer = require('./function').addCustomer
-const deleteCustomer = require('./function').deleteCustomer
-const updateCustomer = require('./function').updateCustomer
+const allIncentive= require('./function').allIncentive
+const viewIncentivebyId = require('./function').viewIncentiveById
+const addIncentive = require('./function').addDriverIncentive
+const updateIncentive = require('./function').updateIncentiveById
+const deleteIncentive = require('./function').deleteIncentive
 const pool = require('./Database/connection').pool
 
 
-router.get('/',async (req,res)=>{
-    // res.send('View Customer Page');
+router.get('',async (req,res)=>{
     const pg_client = await pool.connect()
-    let[success,result] = await allCustomer(pg_client)
+    let[success,result] = await allIncentive(pg_client)
     if(!success){
         console.log(result);
         pg_client.release();
@@ -23,11 +22,10 @@ router.get('/',async (req,res)=>{
     }
 })
 
-router.get('/:id',async(req,res)=>{
+router.get('/:id',async (req,res)=>{
     const{id} = req.params
-    // res.send(`View Customer Page By ${id}`);
     const pg_client = await pool.connect()
-    let[success,result] = await customerById(pg_client,Number(id))
+    let[success,result] = await viewIncentivebyId(pg_client,Number(id))
     if(!success){
         console.log(result);
         pg_client.release();
@@ -38,11 +36,10 @@ router.get('/:id',async(req,res)=>{
     }
 })
 
-router.post('/add',async(req,res)=>{
-    // res.send('Add Customer Page');
-    const{name,nik,phone,membership} = req.body
+router.post('/add',async (req,res)=>{
+    const{booking,insentive} = req.body
     const pg_client = await pool.connect()
-    let[success,result] = await addCustomer(pg_client,name,nik,phone,membership)
+    let[success,result] = await addIncentive(pg_client,booking,insentive);
     if(!success){
         console.log(result);
         pg_client.release();
@@ -53,12 +50,11 @@ router.post('/add',async(req,res)=>{
     }
 })
 
-router.put('/update/:id',async(req,res)=>{
+router.put('/update/:id',async (req,res)=>{
     const{id} = req.params
-    // res.send(`Update Customer Page by ${id}`);
-    const{name,nik,phone,membership} = req.body
+    const{booking,insentive} = req.body
     const pg_client = await pool.connect()
-    let[success,result] = await updateCustomer(pg_client,Number(id),name,nik,phone,membership)
+    let[success,result] = await updateIncentive(pg_client,Number(id),booking,insentive);
     if(!success){
         console.log(result);
         pg_client.release();
@@ -69,11 +65,10 @@ router.put('/update/:id',async(req,res)=>{
     }
 })
 
-router.delete('/delete/:id',async(req,res)=>{
+router.delete('/delete/:id',async (req,res)=>{
     const{id} = req.params
-    // res.send(`Delete Customer Page by ${id}`);
     const pg_client = await pool.connect()
-    let[success,result] = await deleteCustomer(pg_client,Number(id))
+    let[success,result] = await deleteIncentive(pg_client,Number(id));
     if(!success){
         console.log(result);
         pg_client.release();
@@ -83,7 +78,6 @@ router.delete('/delete/:id',async(req,res)=>{
         res.status(200).json({"message":"Success","data":result})
     }
 })
-
 
 
 module.exports = router
