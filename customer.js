@@ -7,6 +7,8 @@ const addCustomer = require('./function').addCustomer
 const deleteCustomer = require('./function').deleteCustomer
 const updateCustomer = require('./function').updateCustomer
 const viewMembershipById = require('./function').viewMembershipById
+
+const login = require('./auth').loginCustomer
 const pool = require('./Database/connection').pool
 
 
@@ -318,6 +320,83 @@ router.delete('/delete/:id',async(req,res)=>{
         pg_client.release();
         res.status(200).json({"message":"Success","data":result})
     }
+})
+
+router.post('/login',async(req,res)=>{
+       
+    //validation the body
+    
+    let joi_template_body = joi.object({
+        "customerID": joi.number().required(),
+        "name": joi.string().required(),
+    }).required();
+    
+    let joi_body_validation = joi_template_body.validate(req.body);
+    if(joi_body_validation.error){
+        const message = {
+            "message": "Failed",
+            "error_key": "error_param",
+            "error_message": joi_body_validation.error.stack,
+            "error_data": joi_body_validation.error.details
+        };
+        res.status(200).json(message);
+        return; //END
+
+    }
+
+    //parameter
+
+    let name = joi_body_validation.value["name"];
+    let customer_Id = joi_body_validation.value["customerID"];
+
+    const pg_client = await pool.connect()
+
+    //insert to database
+
+    let[success,result] = await login(pg_client,customer_Id,name)
+    if(!success){
+        console.log(result);
+        pg_client.release();
+        return;
+    }
+
+     //ID tidak ditemukan
+
+    if(result =="INVALID_ID"){ 
+        console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_id_not_found",
+            "error_message": "Cant found id :: " + customer_Id.toString(),
+            "error_data": {
+                "ON": "Customer_id_Exist",
+                "ID": customer_Id
+            }
+        };
+        pg_client.release();
+        res.status(200).json(message);
+        return; //END
+    }
+
+    //checking name
+
+    if(result =="INVALID_NAME"){
+        const message = {
+            "message": "Failed",
+            "error_key": "error_invalid_name",
+            "error_message": "name is wrong for id :: " + customer_Id.toString(),
+            "error_data": {
+                "ON": "loginCustomer"
+            }
+        };
+        pg_client.release();
+        res.status(200).json(message);
+        return; //END
+    }
+        pg_client.release();
+        res.status(200).json({"message":"Success","data":result})
+
+
 })
 
 

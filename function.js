@@ -118,6 +118,35 @@ async function updateCustomer(pg_client,id,name,nik,phone,membership){
     return[success,result]
 }
 
+async function updateTokenKey(pg_client,id,token){
+    let query
+    let value
+    let success
+    let result
+
+    try {
+        query= `update customer 
+                set "token_key" =$2,
+                where customer_id =$1`
+        value=[
+            id,
+            token
+        ]
+        const temp = await pg_client.query(query,value)
+        if(temp==null || temp==undefined){
+            throw new Error(`query Resulted on: ${temp}`)
+        }else{
+            result= temp.rows
+            success = true
+        }
+    } catch (error) {
+        console.log(error.message);
+        success=false;
+        result=err.message;
+    }
+    return[success,result]
+}
+
 async function deleteCustomer(pg_client,id){
     let query
     let value
@@ -1009,6 +1038,7 @@ exports.customerById = getCustomerById
 exports.addCustomer = addCustomer
 exports.updateCustomer = updateCustomer
 exports.deleteCustomer = deleteCustomer
+exports.updateTokenKey = updateTokenKey
 
 exports.allcars = getAllCars
 exports.carsById = getCarById

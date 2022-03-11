@@ -20,6 +20,8 @@ const pool = require('./Database/connection').pool
 
 const changeDateToUnix = require('./function').convertToUnix
 
+const middleware = require('./middleware').customerMiddlware
+
 router.get('/',async (req,res)=>{
     const pg_client = await pool.connect()
     let[success,result] = await allBooking(pg_client)
@@ -425,6 +427,43 @@ router.delete('/delete/:id',async(req,res)=>{
                 }
             }
     
+})
+
+router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
+
+    let cust_id = res.locals.curr_customer_id;
+    let cust_data = res.local.curr_customer_data;
+    console.log("this is Customer_id: " + cust_id);
+    console.log("this is customer_Data: " + cust_data);
+    const pg_client = await pool.connect()
+    let[success,result] = await viewBookingById(pg_client,cust_id)
+    if(!success){
+        console.log(result);
+        pg_client.release();
+        return;
+    }
+      //ID tidak ditemukan
+
+      if(result.length === 0){ 
+        console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_id_not_found",
+            "error_message": "Cant found data with id :: " + cust_id.toString(),
+            "error_data": {
+                "ON": "cust_id_EXIST",
+                "ID": cust_id
+            }
+        };
+        pg_client.release();
+        res.status(200).json(message);
+        return; //END
+    }
+
+        pg_client.release();
+        let view =  changeDateToUnix(result)
+        res.status(200).json({"message":"Success","data":view})
+
 })
 
 module.exports = router
