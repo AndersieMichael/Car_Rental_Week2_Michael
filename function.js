@@ -371,6 +371,33 @@ async function getBookingById(pg_client,id){
     return[success,result]
 }
 
+async function getBookingByCustomerId(pg_client,id){
+    let query
+    let value
+    let success
+    let result
+
+    try {
+        query= `select * from booking
+                where customer_id=$1`
+        value=[
+            id
+        ]
+        const temp = await pg_client.query(query,value)
+        if(temp==null || temp==undefined){
+            throw new Error(`query Resulted on: ${temp}`)
+        }else{
+            result= temp.rows
+            success = true
+        }
+    } catch (error) {
+        console.log(error.message);
+        success=false;
+        result=err.message;
+    }
+    return[success,result]
+}
+
 async function addBooking(pg_client,custid,carid,startT,endT,cost,finish,discount,booktypeid,driverid,total){
     let query
     let value
@@ -1051,6 +1078,7 @@ exports.viewbookingById = getBookingById
 exports.addBooking = addBooking
 exports.updateBooking = updateBooking
 exports.deleteBooking = deleteBooking
+exports.viewbookingbyCustomerId = getBookingByCustomerId
 
 exports.getMembershipDiscount = getMembershipByCustomerID
 

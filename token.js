@@ -22,7 +22,6 @@ function generateRefreshToken(Customer_data){
         refresh_token = err.message;
         success = false;
     }
-
     return[success,refresh_token]
 
 }
@@ -72,7 +71,29 @@ function verifyAccessToken(token){
     return [success,valid_data];
 }
 
+function verifyRefreshToken(token){
+    let success;
+    let refresh_token;
+
+    try {
+        refresh_token = jwt.verify(token,refresh_key,{
+            algorithms:"HS256"
+        })
+        success = true
+
+        success=true;
+
+    } catch (err) {
+        console.log(err.message);
+        refresh_token = err.message;
+        success = false;
+    }
+    return[success,refresh_token]
+
+}
+
 
 exports.generateRefreshToken = generateRefreshToken
 exports.generateActiveToken = generateActiveToken
 exports.verifyAccessToken = verifyAccessToken
+exports.verifyRefreshToken = verifyRefreshToken

@@ -71,7 +71,7 @@ router.get('/:id',async (req,res)=>{
     res.status(200).json({"message":"Success","data":result})
 })
 
-router.post('/add',async (req,res)=>{
+router.post('/add/newIncentive',async (req,res)=>{
     
     //validation the body
     

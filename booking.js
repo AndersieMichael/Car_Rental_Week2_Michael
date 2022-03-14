@@ -6,6 +6,7 @@ const viewBookingById =  require('./function').viewbookingById
 const addBooking =  require('./function').addBooking
 const updateBooking =  require('./function').updateBooking
 const deleteBooking =  require('./function').deleteBooking
+const viewbookingbyCustomerId = require('./function').viewbookingbyCustomerId
 
 const carsById = require('./function').carsById
 
@@ -86,7 +87,7 @@ router.get('/:id',async(req,res)=>{
 
 })
 
-router.post('/add',async(req,res)=>{
+router.post('/add/newBooking',async(req,res)=>{
 
     //validation the body
     
@@ -151,6 +152,7 @@ router.post('/add',async(req,res)=>{
     if(booktypeid!=1){
         if(driverid == null){//jika bookid==2 tp tidak driverID=null
             res.status(400).send("You must add Driver ID !!")
+            return
          }else{    //ambil data driver 
             let[driverPaymentSuccess,driverPaymentResult] = await getDriverPayment(pg_client,driverid)
             if(!driverPaymentSuccess){
@@ -429,27 +431,28 @@ router.delete('/delete/:id',async(req,res)=>{
     
 })
 
+//view booking by middleware
+
 router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
+    //get id from middleware
 
     let cust_id = res.locals.curr_customer_id;
-    let cust_data = res.local.curr_customer_data;
-    console.log("this is Customer_id: " + cust_id);
-    console.log("this is customer_Data: " + cust_data);
+    
     const pg_client = await pool.connect()
-    let[success,result] = await viewBookingById(pg_client,cust_id)
+    let[success,result] = await viewbookingbyCustomerId(pg_client,cust_id)
     if(!success){
         console.log(result);
         pg_client.release();
         return;
     }
       //ID tidak ditemukan
-
+      
       if(result.length === 0){ 
-        console.log(result);
+          console.log("this is Result:" + result);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
-            "error_message": "Cant found data with id :: " + cust_id.toString(),
+            "error_message": "Cant found data with customer id :: " + cust_id.toString(),
             "error_data": {
                 "ON": "cust_id_EXIST",
                 "ID": cust_id
@@ -464,6 +467,95 @@ router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
         let view =  changeDateToUnix(result)
         res.status(200).json({"message":"Success","data":view})
 
+})
+
+//delete booking by middleware
+
+router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
+            
+    //joi validation param
+
+    let joi_template_param = joi.number().required();
+
+    let joi_validate_param = joi_template_param.validate(req.params.id);
+    if(joi_validate_param.error){
+        const message = {
+            "message": "Failed",
+            "error_key": "error_param",
+            "error_message": joi_validate_param.error.stack,
+            "error_data": joi_validate_param.error.details
+        };
+        res.status(200).json(message);
+        return; //END
+    }
+
+    const booking_id = req.params.id
+    let cust_id = res.locals.curr_customer_id;
+    const pg_client = await pool.connect()
+
+       //checking if id exist
+    
+    let[bsuccess,bresult] = await viewBookingById(pg_client,booking_id)
+    if(!bsuccess){
+        console.log(bresult);
+        pg_client.release();
+        return;
+    }
+      //ID tidak ditemukan
+
+      if(bresult.length === 0){ 
+        console.log(bresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_id_not_found",
+            "error_message": "Cant found data with id :: " + booking_id.toString(),
+            "error_data": {
+                "ON": "booking_id_EXIST",
+                "ID": booking_id
+            }
+        };
+        pg_client.release();
+        res.status(200).json(message);
+        return; //END
+    }
+    
+    //checking if the customer is the one have the booking
+
+    if(cust_id != bresult[0]["customer_id"]){
+        const message = {
+            "message": "Failed",
+            "error_key": "error_delete",
+            "error_message": "the Booking id::" + booking_id.toString() +" is not yours",
+            "error_data": {
+                "ON": "Cannot_delete_booking",
+                "ID": booking_id
+            }
+        };
+        pg_client.release();
+        res.status(200).json(message);
+        return; //END
+    }
+
+    // delete driver incentive terlebih dahulu sebelum booking
+
+    let[driverIncentiveSuccess,driverIncentiveResult] = await deleteDriverIncentive(pg_client,booking_id);
+            if(!driverIncentiveSuccess){
+                console.log(driverIncentiveResult);
+                pg_client.release();
+                return;
+            }else{
+                //delete booking
+                let[success,result] = await deleteBooking(pg_client,booking_id)
+                if(!success){
+                    console.log(result);
+                    pg_client.release();
+                    return;
+                }else{
+                    pg_client.release();
+                    res.status(200).json({"message":"Success","data":result})
+                }
+            }
+    
 })
 
 module.exports = router

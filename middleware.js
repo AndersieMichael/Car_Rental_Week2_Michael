@@ -1,7 +1,4 @@
-const res = require('express/lib/response');
-
 const verify = require('./token').verifyAccessToken
-// const getdata = require('./auth').getCustomerData
 const pool = require('./Database/connection').pool
 
 function getTokenFromHeader(req){
@@ -20,7 +17,7 @@ async function getCustomerData(pg_client,id){
     let result
 
     try {
-        query= `select * from booking
+        query= `select * from customer
                 where customer_id=$1`
         value=[
             id
@@ -41,10 +38,12 @@ async function getCustomerData(pg_client,id){
 }
 
 async function customerMiddleware(req,res,next){
-    // let data_toview_on_error = {
-    //     "Header" : req.headers
-    // }
-    console.log("masuk");
+    let data_toview_on_error = {
+        "Header" : req.headers
+    }
+
+    //get token from header
+    
     const token = getTokenFromHeader(req)
 
     if(token==null || token==undefined){
@@ -59,6 +58,8 @@ async function customerMiddleware(req,res,next){
         res.status(401).json(message);
         return; //END 
     }
+
+    //verify acses token
 
     let [verify_success,verify_result] = verify(token)
 
@@ -77,6 +78,8 @@ async function customerMiddleware(req,res,next){
       return; //END
     }
 
+    //token verify found expired
+
     if(verify_result == "TokenExpiredError"){
         console.log(verify_result);
         const message = {
@@ -94,6 +97,9 @@ async function customerMiddleware(req,res,next){
     let customer_id = verify_result["customer_id"];
 
     const pg_client = await pool.connect()
+
+    //get customer data from customer id that get it from token
+    
     let [customer_success, customer_result] = await getCustomerData(pg_client,customer_id);
 
     if (!customer_success){
@@ -107,9 +113,10 @@ async function customerMiddleware(req,res,next){
         res.status(200).json(message);
         return; //END
     }
-
+    
  // ID NOT FOUND
-    if (customer_result === 0){
+
+    if (customer_result.length === 0){
         console.log(customer_result);
         const message = {
             "message": "Failed",
@@ -124,10 +131,10 @@ async function customerMiddleware(req,res,next){
         return; //END
     }        
 
-    res.local.curr_customer_id = customer_id;
-    res.local.curr_customer_data = customer_result;
+    //adding the data to local
 
-    
+    res.locals.curr_customer_id = customer_id;
+    res.locals.curr_customer_data = customer_result;
 
     next();
 }

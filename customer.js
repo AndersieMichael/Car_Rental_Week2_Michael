@@ -9,7 +9,11 @@ const updateCustomer = require('./function').updateCustomer
 const viewMembershipById = require('./function').viewMembershipById
 
 const login = require('./auth').loginCustomer
+const logout = require('./auth').logoutCustomer
+const verifyRefreshToken = require('./auth').validateRefreshToken
 const pool = require('./Database/connection').pool
+
+const middleware = require('./middleware').customerMiddlware
 
 
 router.get('/',async (req,res)=>{
@@ -77,7 +81,7 @@ router.get('/:id',async(req,res)=>{
     
 })
 
-router.post('/add',async(req,res)=>{
+router.post('/add/newCust',async(req,res)=>{
     
     //validation the body
     
@@ -399,6 +403,133 @@ router.post('/login',async(req,res)=>{
 
 })
 
+router.get('/get/my_profile',middleware,async(req,res)=>{
+       
+    let cust_id = res.locals.curr_customer_id;
+    const pg_client = await pool.connect()
+
+    //insert to database
+
+    let[success,result] = await customerById(pg_client,cust_id)
+    if(!success){
+        console.log(result);
+        pg_client.release();
+        return;
+    }
+
+    //ID tidak ditemukan
+
+    if(result.length === 0){ 
+        console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_id_not_found",
+            "error_message": "Cant found data with id :: " + cust_id.toString(),
+            "error_data": {
+                "ON": "Customer_id_Exist",
+                "ID": cust_id
+            }
+        };
+        pg_client.release();
+        res.status(200).json(message);
+        return; //END
+    }
+
+        pg_client.release();
+        delete result[0]["token_key"]
+        res.status(200).json({"message":"Success","data":result})
+
+
+})
+
+router.post('/logout',middleware,async(req,res)=>{
+    let cust_id = res.locals.curr_customer_id;
+    const pg_client = await pool.connect()
+
+    //insert to database
+
+    let[success,result] = await logout(pg_client,cust_id)
+    if(!success){
+        console.log(result);
+        pg_client.release();
+        return;
+    }
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+})
+
+router.post('/refresh_token',async(req,res)=>{
+       
+    //validation the body
+    
+    let joi_template_body = joi.object({
+        "refresh_token": joi.string().required(),
+    }).required();
+    
+    let joi_body_validation = joi_template_body.validate(req.body);
+    if(joi_body_validation.error){
+        const message = {
+            "message": "Failed",
+            "error_key": "error_param",
+            "error_message": joi_body_validation.error.stack,
+            "error_data": joi_body_validation.error.details
+        };
+        res.status(200).json(message);
+        return; //END
+
+    }
+
+    //parameter
+
+    let refresh = joi_body_validation.value["refresh_token"];
+
+
+    const pg_client = await pool.connect()
+
+    //insert to database
+
+    let[success,result] = await verifyRefreshToken(pg_client,refresh)
+    if(!success){
+        console.log(result);
+        pg_client.release();
+        return;
+    }
+
+     //token expired
+
+    if(result =="TOKEN_EXPIRED"){ 
+        console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_refresh_token_expired",
+            "error_message": "Refresh token is expired, please re-login",
+            "error_data": "ON refreshTokenCustomer"
+        };
+        pg_client.release();
+        res.status(200).json(message);
+        return; //END
+    }
+
+    //invalid token
+
+    if(result =="INVALID_TOKEN"){
+        console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_refresh_token_invalid",
+            "error_message": "Refresh token is invalid, please re-login",
+            "error_data": "ON refreshTokenAuthor"
+        };
+        pg_client.release();
+        res.status(200).json(message);
+        return; //END
+    }
+        pg_client.release();
+        res.status(200).json({"message":"Success","data":result})
+
+
+})
 
 
 module.exports = router
