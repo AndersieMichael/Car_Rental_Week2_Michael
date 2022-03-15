@@ -8,6 +8,8 @@ const updatecar = require('./function').updateCar
 const deletecar = require('./function').deletecar
 const pool = require('./Database/connection').pool
 
+//view all cars data
+
 router.get('/',async (req,res)=>{
     const pg_client = await pool.connect()
     let[success,result] = await allcars(pg_client)
@@ -21,7 +23,9 @@ router.get('/',async (req,res)=>{
     }
 })
 
-router.get('/:id',async(req,res)=>{
+//view all cars by cars id
+
+router.get('/view/:id',async(req,res)=>{
         
     //joi validation param
 
@@ -75,7 +79,9 @@ router.get('/:id',async(req,res)=>{
 
 })
 
-router.post('/add/newcar',async(req,res)=>{
+//add new car
+
+router.post('/add',async(req,res)=>{
 
     //validation the body
     
@@ -116,6 +122,8 @@ router.post('/add/newcar',async(req,res)=>{
     }
 })
 
+//update car by cars id
+
 router.put('/update/:id',async(req,res)=>{
             
     //joi validation param
@@ -133,7 +141,6 @@ router.put('/update/:id',async(req,res)=>{
         res.status(200).json(message);
         return; //END
     }
-
 
     //validation the body
     
@@ -202,6 +209,8 @@ router.put('/update/:id',async(req,res)=>{
         res.status(200).json({"message":"Success","data":result})
     }
 })
+
+//delete car by cars id
 
 router.delete('/delete/:id',async(req,res)=>{
         

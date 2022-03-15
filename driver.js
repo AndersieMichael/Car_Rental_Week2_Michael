@@ -8,6 +8,8 @@ const updateDriver = require('./function').updateDriver
 const deleteDriver = require('./function').deleteDriver
 const pool = require('./Database/connection').pool
 
+//view all driver
+
 router.get('/',async (req,res)=>{
     const pg_client = await pool.connect()
     let[success,result] = await allDriver(pg_client)
@@ -21,7 +23,9 @@ router.get('/',async (req,res)=>{
     }
 })
 
-router.get('/:id',async (req,res)=>{
+//view driver from driver id
+
+router.get('/view/:id',async (req,res)=>{
 
     //joi validation param
 
@@ -73,6 +77,8 @@ router.get('/:id',async (req,res)=>{
     
 })
 
+// add driver
+
 router.post('/add',async (req,res)=>{
 
     //validation the body
@@ -113,6 +119,8 @@ router.post('/add',async (req,res)=>{
         res.status(200).json({"message":"Success","data":result})
     }
 })
+
+//update driver from driver id
 
 router.put('/update/:id',async (req,res)=>{
     
@@ -203,6 +211,8 @@ router.put('/update/:id',async (req,res)=>{
     }
 })
 
+//delete driver from driver id
+
 router.delete('/delete/:id',async (req,res)=>{
       
     //joi validation param
@@ -264,7 +274,6 @@ router.delete('/delete/:id',async (req,res)=>{
         res.status(200).json({"message":"Success","data":result})
     }
 })
-
 
 
 module.exports = router

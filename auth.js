@@ -1,5 +1,3 @@
-const moment = require("moment")
-
 const generateRefreshToken = require('./token').generateRefreshToken;
 const generateActiveToken = require('./token').generateActiveToken
 const verifyRefreshToken = require('./token').verifyRefreshToken
@@ -53,8 +51,11 @@ async function loginCustomer(pg_client,id,name){
     }
 
     //remove data from array
+
     data = result[0]
+
     //remove token key from data that want convert to token
+
     delete data["token_key"]
 
     //generate Refresh token
@@ -103,32 +104,7 @@ async function loginCustomer(pg_client,id,name){
     return[success,result]
 }
 
-async function getCustomerData(pg_client,id){
-    let query
-    let value
-    let success
-    let result
-
-    try {
-        query= `select * from booking
-                where customer_id=$1`
-        value=[
-            id
-        ]
-        const temp = await pg_client.query(query,value)
-        if(temp==null || temp==undefined){
-            throw new Error(`query Resulted on: ${temp}`)
-        }else{
-            result= temp.rows
-            success = true
-        }
-    } catch (error) {
-        console.log(error.message);
-        success=false;
-        result=err.message;
-    }
-    return[success,result]
-}
+//logoutCustomer
 
 async function logoutCustomer(pg_client,id){
     let query
@@ -161,6 +137,8 @@ async function logoutCustomer(pg_client,id){
 
     return[success,result]
 }
+
+//checking refresh token
 
 async function validateRefreshToken(pg_client,refresh_token){
     let query
@@ -222,8 +200,9 @@ async function validateRefreshToken(pg_client,refresh_token){
     }
     
     let data = refresh_token_result
-    delete data["iat","exp"]
-
+    
+    delete data["exp"]
+  
     //generate new active token
 
     let[Active_token_success,Active_token_result] = generateActiveToken(refresh_token_result)
@@ -239,9 +218,6 @@ async function validateRefreshToken(pg_client,refresh_token){
 }
 
 
-
-
 exports.loginCustomer = loginCustomer
-exports.getCustomerData = getCustomerData
 exports.logoutCustomer = logoutCustomer
 exports.validateRefreshToken = validateRefreshToken

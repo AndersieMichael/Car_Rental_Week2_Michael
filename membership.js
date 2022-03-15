@@ -8,6 +8,8 @@ const updateMembership = require('./function').updateMembership
 const deleteMembership = require('./function').deleteMembership
 const pool = require('./Database/connection').pool
 
+//view all membership
+
 router.get('/',async (req,res)=>{
     const pg_client = await pool.connect()
     let[success,result] = await allMembership(pg_client)
@@ -22,7 +24,9 @@ router.get('/',async (req,res)=>{
     }
 })
 
-router.get('/:id',async (req,res)=>{
+//view membership by id
+
+router.get('/view/:id',async (req,res)=>{
      //joi validation
      let joi_template = joi.number().required();
 
@@ -39,6 +43,7 @@ router.get('/:id',async (req,res)=>{
      }
     const membership_id = req.params.id
     const pg_client = await pool.connect()
+
     let[success,result] = await viewMembershipById(pg_client,membership_id)
     if(!success){
         console.log(result);
@@ -60,17 +65,21 @@ router.get('/:id',async (req,res)=>{
         res.status(200).json(message);
         return; //END
     }
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
     
 })
+
+//add membership
 
 router.post('/add',async(req,res)=>{
     let joi_template = joi.object({
         "name": joi.string().required(),
         "discount": joi.number().required(),
     }).required();
+
     //validation the body
+
     let joi_body_validation = joi_template.validate(req.body);
     if(joi_body_validation.error){
         const message = {
@@ -86,17 +95,20 @@ router.post('/add',async(req,res)=>{
     let discount = joi_body_validation.value["discount"];
     
     const pg_client = await pool.connect()
+
     let[success,result] = await addMembership(pg_client,name,discount)
     if(!success){
         console.log(result);
         pg_client.release();
         res.status(200).json({"message":"Error","data":result})
         return;
-    }else{
+    }
         pg_client.release();
         res.status(200).json({"message":"Success","data":result})
-    }
+    
 })
+
+//update membership by membershipid
 
 router.put('/update/:id',async(req,res)=>{
 
@@ -134,6 +146,7 @@ router.put('/update/:id',async(req,res)=>{
         res.status(200).json(message);
         return; //END
     }
+
     let name = joi_body_validation.value["name"];
     let discount = joi_body_validation.value["discount"];
 
@@ -176,11 +189,12 @@ router.put('/update/:id',async(req,res)=>{
         pg_client.release();
         res.status(200).json({"message":"Error","data":result})
         return;
-    }else{
+    }
         pg_client.release();
         res.status(200).json({"message":"Success","data":result})
-    }
 })
+
+//delete membership by membershipid
 
 router.delete('/delete/:id',async(req,res)=>{
       
@@ -230,8 +244,6 @@ router.delete('/delete/:id',async(req,res)=>{
         res.status(200).json(message);
         return; //END
     }
-
-  
 
     //delete membership
 

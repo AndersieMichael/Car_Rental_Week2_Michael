@@ -8,6 +8,7 @@ const updateIncentive = require('./function').updateIncentiveById
 const deleteIncentive = require('./function').deleteIncentive
 const pool = require('./Database/connection').pool
 
+//view all driverIncentive
 
 router.get('/',async (req,res)=>{
     const pg_client = await pool.connect()
@@ -22,7 +23,9 @@ router.get('/',async (req,res)=>{
     }
 })
 
-router.get('/:id',async (req,res)=>{
+//view  driverIncentive by incentive id
+
+router.get('/view/:id',async (req,res)=>{
         
     //joi validation param
 
@@ -41,6 +44,7 @@ router.get('/:id',async (req,res)=>{
     }
 
     const incentive_id = req.params.id
+
     const pg_client = await pool.connect()
     let[success,result] = await viewIncentivebyId(pg_client,incentive_id)
     if(!success){
@@ -71,7 +75,9 @@ router.get('/:id',async (req,res)=>{
     res.status(200).json({"message":"Success","data":result})
 })
 
-router.post('/add/newIncentive',async (req,res)=>{
+//add driverIncentive 
+
+router.post('/add',async (req,res)=>{
     
     //validation the body
     
@@ -108,6 +114,8 @@ router.post('/add/newIncentive',async (req,res)=>{
         res.status(200).json({"message":"Success","data":result})
     }
 })
+
+//update driverIncentive by incentive id
 
 router.put('/update/:id',async (req,res)=>{
        
@@ -193,6 +201,8 @@ router.put('/update/:id',async (req,res)=>{
         res.status(200).json({"message":"Success","data":result})
     }
 })
+
+//delete drivrIncentive by incentive id
 
 router.delete('/delete/:id',async (req,res)=>{
            

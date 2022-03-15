@@ -1,6 +1,8 @@
 const verify = require('./token').verifyAccessToken
 const pool = require('./Database/connection').pool
 
+//take token from header
+
 function getTokenFromHeader(req){
     let header_target = "authorization";
     header_target = header_target.toLowerCase();
@@ -9,6 +11,8 @@ function getTokenFromHeader(req){
     }
     return null;
 }
+
+//get customer data from middleware
 
 async function getCustomerData(pg_client,id){
     let query
@@ -36,6 +40,8 @@ async function getCustomerData(pg_client,id){
     }
     return[success,result]
 }
+
+//customer middleware
 
 async function customerMiddleware(req,res,next){
     let data_toview_on_error = {
@@ -114,7 +120,7 @@ async function customerMiddleware(req,res,next){
         return; //END
     }
     
- // ID NOT FOUND
+    // ID NOT FOUND
 
     if (customer_result.length === 0){
         console.log(customer_result);

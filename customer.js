@@ -11,10 +11,12 @@ const viewMembershipById = require('./function').viewMembershipById
 const login = require('./auth').loginCustomer
 const logout = require('./auth').logoutCustomer
 const verifyRefreshToken = require('./auth').validateRefreshToken
+
 const pool = require('./Database/connection').pool
 
 const middleware = require('./middleware').customerMiddlware
 
+//view all customer data
 
 router.get('/',async (req,res)=>{
     const pg_client = await pool.connect()
@@ -29,7 +31,9 @@ router.get('/',async (req,res)=>{
     }
 })
 
-router.get('/:id',async(req,res)=>{
+//view customer by customer ID
+
+router.get('/view/:id',async(req,res)=>{
     
     //joi validation param
 
@@ -81,7 +85,9 @@ router.get('/:id',async(req,res)=>{
     
 })
 
-router.post('/add/newCust',async(req,res)=>{
+//add customer
+
+router.post('/add',async(req,res)=>{
     
     //validation the body
     
@@ -150,6 +156,8 @@ router.post('/add/newCust',async(req,res)=>{
         res.status(200).json({"message":"Success","data":result})
     }
 })
+
+//update customer by customer id
 
 router.put('/update/:id',async(req,res)=>{
     
@@ -269,9 +277,10 @@ router.put('/update/:id',async(req,res)=>{
 
 })
 
+//delete customer by customer id
+
 router.delete('/delete/:id',async(req,res)=>{
 
-        
     //joi validation param
 
     let joi_template_param = joi.number().required();
@@ -315,6 +324,8 @@ router.delete('/delete/:id',async(req,res)=>{
         return; //END
     }
 
+    // delete customer
+
     let[success,result] = await deleteCustomer(pg_client,customer_id)
     if(!success){
         console.log(result);
@@ -325,6 +336,8 @@ router.delete('/delete/:id',async(req,res)=>{
         res.status(200).json({"message":"Success","data":result})
     }
 })
+
+//customer login
 
 router.post('/login',async(req,res)=>{
        
@@ -403,9 +416,12 @@ router.post('/login',async(req,res)=>{
 
 })
 
+//view profile from middleware
+
 router.get('/get/my_profile',middleware,async(req,res)=>{
        
     let cust_id = res.locals.curr_customer_id;
+
     const pg_client = await pool.connect()
 
     //insert to database
@@ -435,15 +451,18 @@ router.get('/get/my_profile',middleware,async(req,res)=>{
         return; //END
     }
 
-        pg_client.release();
-        delete result[0]["token_key"]
-        res.status(200).json({"message":"Success","data":result})
+    pg_client.release();
+    delete result[0]["token_key"]
+    res.status(200).json({"message":"Success","data":result})
 
 
 })
 
+//logout customer from middleware
+
 router.post('/logout',middleware,async(req,res)=>{
     let cust_id = res.locals.curr_customer_id;
+
     const pg_client = await pool.connect()
 
     //insert to database
@@ -458,6 +477,8 @@ router.post('/logout',middleware,async(req,res)=>{
     pg_client.release();
     res.status(200).json({"message":"Success","data":result})
 })
+
+//refresh token if active token expired
 
 router.post('/refresh_token',async(req,res)=>{
        
@@ -525,8 +546,8 @@ router.post('/refresh_token',async(req,res)=>{
         res.status(200).json(message);
         return; //END
     }
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
 
 
 })

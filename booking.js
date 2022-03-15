@@ -23,6 +23,8 @@ const changeDateToUnix = require('./function').convertToUnix
 
 const middleware = require('./middleware').customerMiddlware
 
+//view all booking
+
 router.get('/',async (req,res)=>{
     const pg_client = await pool.connect()
     let[success,result] = await allBooking(pg_client)
@@ -37,7 +39,9 @@ router.get('/',async (req,res)=>{
     }
 })
 
-router.get('/:id',async(req,res)=>{
+//view booking by bookingID
+
+router.get('/view/:id',async(req,res)=>{
             
     //joi validation param
 
@@ -56,6 +60,7 @@ router.get('/:id',async(req,res)=>{
     }
 
     const booking_id = req.params.id
+
     const pg_client = await pool.connect()
     let[success,result] = await viewBookingById(pg_client,booking_id)
     if(!success){
@@ -87,7 +92,9 @@ router.get('/:id',async(req,res)=>{
 
 })
 
-router.post('/add/newBooking',async(req,res)=>{
+//add bookingID
+
+router.post('/add',async(req,res)=>{
 
     //validation the body
     
@@ -120,26 +127,36 @@ router.post('/add/newBooking',async(req,res)=>{
     let status = joi_body_validation.value["status"];
     let booktypeid = joi_body_validation.value["booktypeid"];
     let driverid = joi_body_validation.value["driverid"];
+    let discount,daily_discount,total,insentive =0
+    
+    //calculate length date
 
     const start = new Date(startT*1000);
     const end = new Date(endT*1000);
     const day = new Date(end - start).getDate()
-    let discount,daily_discount,total,insentive =0
+    
     const pg_client = await pool.connect()
+    
     //get car id
+    
     let[carsSuccess,carsResult] = await carsById(pg_client,carid)
     if(!carsSuccess){
         console.log(carsResult);
         pg_client.release();
         return;
     }
+    
     //get membership
+    
     let[membershipSuccess,membershipResult] = await getMembershipDiscount(pg_client,custid)
     if(!membershipSuccess){
         console.log(membershipResult);
         pg_client.release();
         return;
     }
+
+    //membership null
+
     if(membershipResult.length === 0){
         daily_discount=0
     }
@@ -148,12 +165,21 @@ router.post('/add/newBooking',async(req,res)=>{
     }
 
     let harga = carsResult[0]["rent_price_daily"];
+
     const cost = harga * day;
+    
+    //checking booking type id 
+
     if(booktypeid!=1){
-        if(driverid == null){//jika bookid==2 tp tidak driverID=null
+        
+        //jika bookid==2 tp driverID=null
+
+        if(driverid == null){
             res.status(400).send("You must add Driver ID !!")
             return
-         }else{    //ambil data driver 
+        }
+        
+        else{    //ambil data driver 
             let[driverPaymentSuccess,driverPaymentResult] = await getDriverPayment(pg_client,driverid)
             if(!driverPaymentSuccess){
                 console.log(driverPaymentResult);
@@ -162,22 +188,29 @@ router.post('/add/newBooking',async(req,res)=>{
             }
             let driverPayment =  driverPaymentResult[0]["daily_cost"];
             total = driverPayment * day
-         }
+        }
        
         insentive = cost*5/100
+
     }else{
         driverid=null
         total = 0
     }
+
     discount = cost * daily_discount/100
-    //finaly create the booking
+
+    //create booking
+    
     let[success,result] = await addBooking(pg_client,custid,carid,start,end,cost,status,discount,booktypeid,driverid,total);
     if(!success){
         console.log(result);
         pg_client.release();
         return;
     }else{
-        if(booktypeid!=1){//create driver incentive if booktypeid == 2
+
+        //create driver incentive if booktypeid == 2
+        
+        if(booktypeid!=1){
             let booking_id = result[0]["booking_id"];
             let[driverIncentiveSuccess,driverIncentiveResult] = await addDriverIncentive(pg_client,booking_id,insentive);
             if(!driverIncentiveSuccess){
@@ -196,6 +229,8 @@ router.post('/add/newBooking',async(req,res)=>{
     
 
 })
+
+//update booking from bookingID
 
 router.put('/update/:id',async(req,res)=>{
             
@@ -311,7 +346,10 @@ router.put('/update/:id',async(req,res)=>{
     //checking booktype for calucating driver cost
     
     if(booktypeid!=1){
-        if(driverid == null){//jika bookid==2 tp tidak driverID=null
+        
+        //jika bookid==2 tp driverID=null
+
+        if(driverid == null){
             res.status(400).send("You must add Driver ID !!")
          }else{    //ambil data driver 
             let[driverPaymentSuccess,driverPaymentResult] = await getDriverPayment(pg_client,driverid)
@@ -320,11 +358,13 @@ router.put('/update/:id',async(req,res)=>{
                 pg_client.release();
                 return;
             }
+
             let driverPayment =  driverPaymentResult[0]["daily_cost"];
             total = driverPayment * day
          }
        
         insentive = cost*5/100
+
     }else{
         driverid=null
         total = 0
@@ -362,6 +402,8 @@ router.put('/update/:id',async(req,res)=>{
     }
 })
 
+//delete booking by booking id
+
 router.delete('/delete/:id',async(req,res)=>{
             
     //joi validation param
@@ -383,7 +425,7 @@ router.delete('/delete/:id',async(req,res)=>{
     const booking_id = req.params.id
     const pg_client = await pool.connect()
 
-       //checking if id exist
+    //checking if id exist
     
     let[bsuccess,bresult] = await viewBookingById(pg_client,booking_id)
     if(!bsuccess){
@@ -469,7 +511,7 @@ router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
 
 })
 
-//delete booking by middleware
+//delete booking by booking id and checking by middleware
 
 router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
             
@@ -493,7 +535,7 @@ router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
     let cust_id = res.locals.curr_customer_id;
     const pg_client = await pool.connect()
 
-       //checking if id exist
+    //checking if id exist
     
     let[bsuccess,bresult] = await viewBookingById(pg_client,booking_id)
     if(!bsuccess){
