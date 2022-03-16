@@ -117,6 +117,7 @@ async function customerMiddleware(req,res,next){
             "error_data": "ON getCustomerData"
         };
         res.status(200).json(message);
+        pg_client.release();
         return; //END
     }
     
@@ -134,14 +135,16 @@ async function customerMiddleware(req,res,next){
             }
         }
         res.status(401).json(message);
+        pg_client.release();
         return; //END
     }        
+
+    pg_client.release();
 
     //adding the data to local
 
     res.locals.curr_customer_id = customer_id;
     res.locals.curr_customer_data = customer_result;
-
     next();
 }
 

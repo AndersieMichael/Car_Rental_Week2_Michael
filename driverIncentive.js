@@ -15,12 +15,21 @@ router.get('/',async (req,res)=>{
     let[success,result] = await allIncentive(pg_client)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON viewAllDriverIncentive"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
-    }
+    } 
+    
+    //success
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
 })
 
 //view  driverIncentive by incentive id
@@ -49,7 +58,14 @@ router.get('/view/:id',async (req,res)=>{
     let[success,result] = await viewIncentivebyId(pg_client,incentive_id)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON viewIncentiveByID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -70,9 +86,13 @@ router.get('/view/:id',async (req,res)=>{
         res.status(200).json(message);
         return; //END
     }
-
+    
+    //success
+    
     pg_client.release();
     res.status(200).json({"message":"Success","data":result})
+    return;
+
 })
 
 //add driverIncentive 
@@ -107,12 +127,23 @@ router.post('/add',async (req,res)=>{
     let[success,result] = await addIncentive(pg_client,booking,insentive);
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON addDriverIncentive"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+
 })
 
 //update driverIncentive by incentive id
@@ -135,7 +166,6 @@ router.put('/update/:id',async (req,res)=>{
         return; //END
     }
 
-       
     //validation the body
     
     let joi_template_body = joi.object({
@@ -155,6 +185,7 @@ router.put('/update/:id',async (req,res)=>{
         return; //END
 
     }
+
     let booking = joi_body_validation.value["booking"];
     let insentive = joi_body_validation.value["insentive"];
 
@@ -167,7 +198,14 @@ router.put('/update/:id',async (req,res)=>{
     let[isuccess,iresult] = await viewIncentivebyId(pg_client,incentive_id)
     if(!isuccess){
         console.log(iresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": iresult,
+            "error_data": "ON checkingIncentivebyID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -194,12 +232,22 @@ router.put('/update/:id',async (req,res)=>{
     let[success,result] = await updateIncentive(pg_client,incentive_id,booking,insentive);
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON updateIncentive"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+
 })
 
 //delete drivrIncentive by incentive id
@@ -231,7 +279,14 @@ router.delete('/delete/:id',async (req,res)=>{
     let[isuccess,iresult] = await viewIncentivebyId(pg_client,incentive_id)
     if(!isuccess){
         console.log(iresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": iresult,
+            "error_data": "ON checkingIncentiveByID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -258,12 +313,23 @@ router.delete('/delete/:id',async (req,res)=>{
     let[success,result] = await deleteIncentive(pg_client,incentive_id);
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON deleteIncentive"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+    
 })
 
 

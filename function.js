@@ -8,7 +8,8 @@ async function getAllCustomer(pg_client){
     let result
 
     try {
-        query= `select * from customer
+        query= `select customer_id,membership_id,name,nik,phone_number
+                from customer
                 order by customer_id`
         value=[]
         const temp = await pg_client.query(query)
@@ -33,7 +34,8 @@ async function getCustomerById(pg_client,id){
     let result
 
     try {
-        query= `select * from customer
+        query= `select customer_id,membership_id,name,nik,phone_number,password
+                from customer
                 where customer_id=$1`
         value=[
             id
@@ -53,20 +55,21 @@ async function getCustomerById(pg_client,id){
     return[success,result]
 }
 
-async function addCustomer(pg_client,name,nik,phone,membership){
+async function addCustomer(pg_client,name,nik,phone,membership,password){
     let query
     let value
     let success
     let result
 
     try {
-        query= `insert into customer (name,nik,phone_number,membership_id)
-                Values($1,$2,$3,$4)`
+        query= `insert into customer (name,nik,phone_number,membership_id,password)
+                Values($1,$2,$3,$4,$5)`
         value=[
             name,
             nik,
             phone,
-            membership
+            membership,
+            password
         ]
         const temp = await pg_client.query(query,value)
         if(temp==null || temp==undefined){
@@ -83,7 +86,7 @@ async function addCustomer(pg_client,name,nik,phone,membership){
     return[success,result]
 }
 
-async function updateCustomer(pg_client,id,name,nik,phone,membership){
+async function updateCustomer(pg_client,id,name,nik,phone,membership,password){
     let query
     let value
     let success
@@ -94,14 +97,16 @@ async function updateCustomer(pg_client,id,name,nik,phone,membership){
                 set "name" = $2,
                 "nik" = $3,
                 "phone_number"=$4,
-                "membership_id"=$5
+                "membership_id"=$5,
+                "password"=$6
                 where customer_id=$1`
         value=[
             id,
             name,
             nik,
             phone,
-            membership
+            membership,
+            password
         ]
         const temp = await pg_client.query(query,value)
         if(temp==null || temp==undefined){
@@ -158,6 +163,33 @@ async function deleteCustomer(pg_client,id){
                 where customer_id=$1`
         value=[
             id
+        ]
+        const temp = await pg_client.query(query,value)
+        if(temp==null || temp==undefined){
+            throw new Error(`query Resulted on: ${temp}`)
+        }else{
+            result= temp.rows
+            success = true
+        }
+    } catch (error) {
+        console.log(error.message);
+        success=false;
+        result=err.message;
+    }
+    return[success,result]
+}
+
+async function checkingNameExist(pg_client,name){
+    let query
+    let value
+    let success
+    let result
+
+    try {
+        query= `select * from customer
+                where name=$1`
+        value=[
+            name
         ]
         const temp = await pg_client.query(query,value)
         if(temp==null || temp==undefined){
@@ -1066,6 +1098,7 @@ exports.addCustomer = addCustomer
 exports.updateCustomer = updateCustomer
 exports.deleteCustomer = deleteCustomer
 exports.updateTokenKey = updateTokenKey
+exports.checkingNameExist = checkingNameExist
 
 exports.allcars = getAllCars
 exports.carsById = getCarById

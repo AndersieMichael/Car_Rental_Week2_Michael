@@ -15,12 +15,23 @@ router.get('/',async (req,res)=>{
     let[success,result] = await allcars(pg_client)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON viewAllCar"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+
 })
 
 //view all cars by cars id
@@ -52,7 +63,14 @@ router.get('/view/:id',async(req,res)=>{
     let[success,result] = await carsById(pg_client,cars_id)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON viewCarByID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -74,8 +92,11 @@ router.get('/view/:id',async(req,res)=>{
         return; //END
     }
 
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
 
 })
 
@@ -114,12 +135,23 @@ router.post('/add',async(req,res)=>{
     let[success,result] = await addcar(pg_client,name,price,stock)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON deleteCar"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+
 })
 
 //update car by cars id
@@ -175,7 +207,14 @@ router.put('/update/:id',async(req,res)=>{
     let[csuccess,cresult] = await carsById(pg_client,cars_id)
     if(!csuccess){
         console.log(cresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": cresult,
+            "error_data": "ON checkingCarByID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -202,12 +241,23 @@ router.put('/update/:id',async(req,res)=>{
     let[success,result] = await updatecar(pg_client,cars_id,name,price,stock)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON updateCar"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+
 })
 
 //delete car by cars id
@@ -239,7 +289,14 @@ router.delete('/delete/:id',async(req,res)=>{
     let[csuccess,cresult] = await carsById(pg_client,cars_id)
     if(!csuccess){
         console.log(cresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": cresult,
+            "error_data": "ON checkingCarByID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -266,12 +323,23 @@ router.delete('/delete/:id',async(req,res)=>{
     let[success,result] = await deletecar(pg_client,cars_id)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON deleteCar"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+    
 })
 
 

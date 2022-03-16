@@ -1,6 +1,8 @@
 const express = require('express')
 const router = express.Router()
 const joi = require('joi')
+
+
 const allBooking = require('./function').allBooking
 const viewBookingById =  require('./function').viewbookingById
 const addBooking =  require('./function').addBooking
@@ -30,13 +32,24 @@ router.get('/',async (req,res)=>{
     let[success,result] = await allBooking(pg_client)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON viewAllBooking"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-       let view =  changeDateToUnix(result)
-        res.status(200).json({"message":"Success","data":view})
     }
+
+    //success
+
+    pg_client.release();
+    let view =  changeDateToUnix(result)
+    res.status(200).json({"message":"Success","data":view})
+    return;
+
 })
 
 //view booking by bookingID
@@ -65,7 +78,14 @@ router.get('/view/:id',async(req,res)=>{
     let[success,result] = await viewBookingById(pg_client,booking_id)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON viewBookingByID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
       //ID tidak ditemukan
@@ -85,10 +105,11 @@ router.get('/view/:id',async(req,res)=>{
         res.status(200).json(message);
         return; //END
     }
-
-        pg_client.release();
-        let view =  changeDateToUnix(result)
-        res.status(200).json({"message":"Success","data":view})
+    //success
+    pg_client.release();
+    let view =  changeDateToUnix(result)
+    res.status(200).json({"message":"Success","data":view})
+    return;
 
 })
 
@@ -142,7 +163,14 @@ router.post('/add',async(req,res)=>{
     let[carsSuccess,carsResult] = await carsById(pg_client,carid)
     if(!carsSuccess){
         console.log(carsResult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": carsResult,
+            "error_data": "ON checkingCar"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
     
@@ -151,7 +179,14 @@ router.post('/add',async(req,res)=>{
     let[membershipSuccess,membershipResult] = await getMembershipDiscount(pg_client,custid)
     if(!membershipSuccess){
         console.log(membershipResult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": membershipResult,
+            "error_data": "ON checkingMembership"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -175,15 +210,30 @@ router.post('/add',async(req,res)=>{
         //jika bookid==2 tp driverID=null
 
         if(driverid == null){
-            res.status(400).send("You must add Driver ID !!")
-            return
+            console.log("DriverID_NULL");
+            const message = {
+                "message": "Failed",
+                "error_key": "error_driver_null",
+                "error_message": "DriverID_NULL",
+                "error_data": "ON checkingDriver_if_bookType2"
+            };
+            pg_client.release();
+            res.status(200).json(message)
+            return;
         }
         
         else{    //ambil data driver 
             let[driverPaymentSuccess,driverPaymentResult] = await getDriverPayment(pg_client,driverid)
             if(!driverPaymentSuccess){
                 console.log(driverPaymentResult);
+                const message = {
+                    "message": "Failed",
+                    "error_key": "error_internal_server",
+                    "error_message": driverPaymentResult,
+                    "error_data": "ON getDriverPayment"
+                };
                 pg_client.release();
+                res.status(200).json(message)
                 return;
             }
             let driverPayment =  driverPaymentResult[0]["daily_cost"];
@@ -204,7 +254,14 @@ router.post('/add',async(req,res)=>{
     let[success,result] = await addBooking(pg_client,custid,carid,start,end,cost,status,discount,booktypeid,driverid,total);
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON addBooking"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }else{
 
@@ -215,16 +272,31 @@ router.post('/add',async(req,res)=>{
             let[driverIncentiveSuccess,driverIncentiveResult] = await addDriverIncentive(pg_client,booking_id,insentive);
             if(!driverIncentiveSuccess){
                 console.log(driverIncentiveResult);
+                const message = {
+                    "message": "Failed",
+                    "error_key": "error_internal_server",
+                    "error_message": driverIncentiveResult,
+                    "error_data": "ON addDriverIncentiveFromBooking"
+                };
                 pg_client.release();
+                res.status(200).json(message)
                 return;
-            }else{
-                pg_client.release();
-                res.status(200).json({"message":"Success","data":driverIncentiveResult})
             }
-        }else{
+            
+            //success
+
             pg_client.release();
-            res.status(200).json({"message":"Success","data":result})
+            res.status(200).json({"message":"Success","data":driverIncentiveResult})
+            return;
+
         }
+
+        //success
+
+        pg_client.release();
+        res.status(200).json({"message":"Success","data":result})
+        return;
+
     }
     
 
@@ -295,7 +367,14 @@ router.put('/update/:id',async(req,res)=>{
     let[bsuccess,bresult] = await viewBookingById(pg_client,booking_id)
     if(!bsuccess){
         console.log(bresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": bresult,
+            "error_data": "ON checkingBookingID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
       //ID tidak ditemukan
@@ -321,7 +400,14 @@ router.put('/update/:id',async(req,res)=>{
     let[carsSuccess,carsResult] = await carsById(pg_client,carid)
     if(!carsSuccess){
         console.log(carsResult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": carsResult,
+            "error_data": "ON checkingCarID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -329,10 +415,20 @@ router.put('/update/:id',async(req,res)=>{
 
     let[membershipSuccess,membershipResult] = await getMembershipDiscount(pg_client,custid)
     if(!membershipSuccess){
-        console.log(membershipResult);
+        console.log(membershipresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": membershipresult,
+            "error_data": "ON checkingMembership"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
+
+    //membership null
+
     if(membershipResult.length === 0){
         daily_discount=0
     }
@@ -354,9 +450,17 @@ router.put('/update/:id',async(req,res)=>{
          }else{    //ambil data driver 
             let[driverPaymentSuccess,driverPaymentResult] = await getDriverPayment(pg_client,driverid)
             if(!driverPaymentSuccess){
-                console.log(driverPaymentResult);
+                console.log(driverPaymentresult);
+                const message = {
+                    "message": "Failed",
+                    "error_key": "error_internal_server",
+                    "error_message": driverPaymentresult,
+                    "error_data": "ON checkingDriverPaymentOnBooking"
+                };
                 pg_client.release();
+                res.status(200).json(message)
                 return;
+
             }
 
             let driverPayment =  driverPaymentResult[0]["daily_cost"];
@@ -379,7 +483,14 @@ router.put('/update/:id',async(req,res)=>{
     let[success,result] = await updateBooking(pg_client,booking_id,custid,carid,start,end,cost,status,discount,booktypeid,driverid,total)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON updateBooking"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }else{
 
@@ -389,16 +500,31 @@ router.put('/update/:id',async(req,res)=>{
             let[driverIncentiveSuccess,driverIncentiveResult] = await updateDriverIncentive(pg_client,booking_id,insentive);
             if(!driverIncentiveSuccess){
                 console.log(driverIncentiveResult);
+                const message = {
+                    "message": "Failed",
+                    "error_key": "error_internal_server",
+                    "error_message": driverIncentiveResult,
+                    "error_data": "ON updateDriverIncentiveOnBooking"
+                };
                 pg_client.release();
+                res.status(200).json(message)
                 return;
-            }else{
-                pg_client.release();
-                res.status(200).json({"message":"Success","data":driverIncentiveResult})
             }
-        }else{
+            
+            //success
+
             pg_client.release();
-            res.status(200).json({"message":"Success","data":result})
+            res.status(200).json({"message":"Success","data":driverIncentiveResult})
+            return;
+
         }
+
+        //success
+
+        pg_client.release();
+        res.status(200).json({"message":"Success","data":result})
+        return;
+
     }
 })
 
@@ -430,7 +556,14 @@ router.delete('/delete/:id',async(req,res)=>{
     let[bsuccess,bresult] = await viewBookingById(pg_client,booking_id)
     if(!bsuccess){
         console.log(bresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": bresult,
+            "error_data": "ON checkingBooking"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
       //ID tidak ditemukan
@@ -454,22 +587,43 @@ router.delete('/delete/:id',async(req,res)=>{
     //delete driver incentive terlebih dahulu sebelum booking
 
     let[driverIncentiveSuccess,driverIncentiveResult] = await deleteDriverIncentive(pg_client,booking_id);
-            if(!driverIncentiveSuccess){
-                console.log(driverIncentiveResult);
-                pg_client.release();
-                return;
-            }else{
-                //delete booking
-                let[success,result] = await deleteBooking(pg_client,booking_id)
-                if(!success){
-                    console.log(result);
-                    pg_client.release();
-                    return;
-                }else{
-                    pg_client.release();
-                    res.status(200).json({"message":"Success","data":result})
-                }
-            }
+
+    if(!driverIncentiveSuccess){
+        console.log(driverIncentiveResult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": driverIncentiveResult,
+            "error_data": "ON deleteDriverIncentiveOnBooking"
+        };
+        pg_client.release();
+        res.status(200).json(message)
+        return;
+
+    }else{
+            
+        //delete booking
+
+        let[success,result] = await deleteBooking(pg_client,booking_id)
+        if(!success){
+            console.log(result);
+            const message = {
+                "message": "Failed",
+                "error_key": "error_internal_server",
+                "error_message": result,
+                "error_data": "ON deleteBooking"
+            };
+            pg_client.release();
+            res.status(200).json(message)
+            return;
+        }
+
+        //success
+
+        pg_client.release();
+        res.status(200).json({"message":"Success","data":result})
+        return;
+    }
     
 })
 
@@ -483,20 +637,26 @@ router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
     const pg_client = await pool.connect()
     let[success,result] = await viewbookingbyCustomerId(pg_client,cust_id)
     if(!success){
-        console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON viewbookingByMiddleware"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
       //ID tidak ditemukan
       
       if(result.length === 0){ 
-          console.log("this is Result:" + result);
+          console.log(result);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
             "error_message": "Cant found data with customer id :: " + cust_id.toString(),
             "error_data": {
-                "ON": "cust_id_EXIST",
+                "ON": "Booking_EXIST",
                 "ID": cust_id
             }
         };
@@ -505,10 +665,13 @@ router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
         return; //END
     }
 
-        pg_client.release();
-        let view =  changeDateToUnix(result)
-        res.status(200).json({"message":"Success","data":view})
-
+    //success
+        
+    pg_client.release();
+    let view =  changeDateToUnix(result)
+    res.status(200).json({"message":"Success","data":view})
+    return;
+    
 })
 
 //delete booking by booking id and checking by middleware
@@ -540,12 +703,19 @@ router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
     let[bsuccess,bresult] = await viewBookingById(pg_client,booking_id)
     if(!bsuccess){
         console.log(bresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": bresult,
+            "error_data": "ON checkingBookingFromMiddleware"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
-      //ID tidak ditemukan
+    //ID tidak ditemukan
 
-      if(bresult.length === 0){ 
+    if(bresult.length === 0){ 
         console.log(bresult);
         const message = {
             "message": "Failed",
@@ -581,22 +751,42 @@ router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
     // delete driver incentive terlebih dahulu sebelum booking
 
     let[driverIncentiveSuccess,driverIncentiveResult] = await deleteDriverIncentive(pg_client,booking_id);
-            if(!driverIncentiveSuccess){
-                console.log(driverIncentiveResult);
-                pg_client.release();
-                return;
-            }else{
-                //delete booking
-                let[success,result] = await deleteBooking(pg_client,booking_id)
-                if(!success){
-                    console.log(result);
-                    pg_client.release();
-                    return;
-                }else{
-                    pg_client.release();
-                    res.status(200).json({"message":"Success","data":result})
-                }
-            }
+    if(!driverIncentiveSuccess){
+        console.log(driverIncentiveResult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": driverIncentiveResult,
+            "error_data": "ON deleteDriverIncentiveOnBookingFromMiddleware"
+        };
+        pg_client.release();
+        res.status(200).json(message)
+        return;
+    }else{
+
+        //delete booking
+                
+        let[success,result] = await deleteBooking(pg_client,booking_id)
+        if(!success){
+            console.log(result);
+            const message = {
+                "message": "Failed",
+                "error_key": "error_internal_server",
+                "error_message": result,
+                "error_data": "ON deleteBookingFromMiddleware"
+            };
+            pg_client.release();
+            res.status(200).json(message)
+            return;
+        }
+        
+        //success
+        
+        pg_client.release();
+        res.status(200).json({"message":"Success","data":result})
+        return;
+
+    }
     
 })
 

@@ -15,12 +15,23 @@ router.get('/',async (req,res)=>{
     let[success,result] = await allDriver(pg_client)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON viewAllDriver"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+
 })
 
 //view driver from driver id
@@ -50,7 +61,14 @@ router.get('/view/:id',async (req,res)=>{
     let[success,result] = await viewDriverbyId(pg_client,driver_id)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON viewDriverByID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -71,10 +89,12 @@ router.get('/view/:id',async (req,res)=>{
         res.status(200).json(message);
         return; //END
     }
+    //success
 
     pg_client.release();
     res.status(200).json({"message":"Success","data":result})
-    
+    return;
+
 })
 
 // add driver
@@ -112,12 +132,23 @@ router.post('/add',async (req,res)=>{
     let[success,result] = await addDriver(pg_client,name,nik,phone,cost)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON addDriver"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+
 })
 
 //update driver from driver id
@@ -176,7 +207,14 @@ router.put('/update/:id',async (req,res)=>{
     let[dsuccess,dresult] = await viewDriverbyId(pg_client,driver_id)
     if(!dsuccess){
         console.log(dresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": dresult,
+            "error_data": "ON checkingDriverID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -203,12 +241,23 @@ router.put('/update/:id',async (req,res)=>{
     let[success,result] = await updateDriver(pg_client,driver_id,name,nik,phone,cost)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON updateDriver"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+
 })
 
 //delete driver from driver id
@@ -240,7 +289,14 @@ router.delete('/delete/:id',async (req,res)=>{
     let[dsuccess,dresult] = await viewDriverbyId(pg_client,driver_id)
     if(!dsuccess){
         console.log(dresult);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": dresult,
+            "error_data": "ON checkingDriverID"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
     }
 
@@ -267,12 +323,23 @@ router.delete('/delete/:id',async (req,res)=>{
     let[success,result] = await deleteDriver(pg_client,driver_id)
     if(!success){
         console.log(result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_internal_server",
+            "error_message": result,
+            "error_data": "ON deleteDriver"
+        };
         pg_client.release();
+        res.status(200).json(message)
         return;
-    }else{
-        pg_client.release();
-        res.status(200).json({"message":"Success","data":result})
     }
+
+    //success
+
+    pg_client.release();
+    res.status(200).json({"message":"Success","data":result})
+    return;
+    
 })
 
 
