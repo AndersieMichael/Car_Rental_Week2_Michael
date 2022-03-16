@@ -34,7 +34,7 @@ async function getCustomerById(pg_client,id){
     let result
 
     try {
-        query= `select customer_id,membership_id,name,nik,phone_number,password
+        query= `select customer_id,membership_id,name,nik,phone_number
                 from customer
                 where customer_id=$1`
         value=[
