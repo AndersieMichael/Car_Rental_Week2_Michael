@@ -1,26 +1,56 @@
+//IMPORT
 const express = require('express')
 const router = express.Router()
 const joi = require('joi')
-const allDriver = require('./function').allDriver
-const viewDriverbyId = require('./function').viewDriverById
-const addDriver = require('./function').addDriver
-const updateDriver = require('./function').updateDriver
-const deleteDriver = require('./function').deleteDriver
-const pool = require('./Database/connection').pool
+const moment = require("moment")
+
+//function
+
+const allDriver = require('./functions').allDriver
+const viewDriverbyId = require('./functions').viewDriverById
+const addDriver = require('./functions').addDriver
+const updateDriver = require('./functions').updateDriver
+const deleteDriver = require('./functions').deleteDriver
+
+//logging
+const logApiBasic = require('../../utilities/slack').logApiBasic;
+
+//connection
+
+const pool = require('../../utilities/connection').pool
+
+let head_route_name = "/driver"
 
 //view all driver
 
 router.get('/',async (req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     const pg_client = await pool.connect()
     let[success,result] = await allDriver(pg_client)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON viewAllDriver"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -38,6 +68,11 @@ router.get('/',async (req,res)=>{
 
 router.get('/view/:id',async (req,res)=>{
 
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     //joi validation param
 
     let joi_template_param = joi.number().required();
@@ -50,6 +85,14 @@ router.get('/view/:id',async (req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -60,13 +103,24 @@ router.get('/view/:id',async (req,res)=>{
     const pg_client = await pool.connect()
     let[success,result] = await viewDriverbyId(pg_client,driver_id)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON viewDriverByID"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -75,7 +129,10 @@ router.get('/view/:id',async (req,res)=>{
     //ID tidak ditemukan
 
     if(result.length === 0){ 
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -85,6 +142,14 @@ router.get('/view/:id',async (req,res)=>{
                 "ID": driver_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -100,6 +165,11 @@ router.get('/view/:id',async (req,res)=>{
 // add driver
 
 router.post('/add',async (req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
 
     //validation the body
     
@@ -118,6 +188,14 @@ router.post('/add',async (req,res)=>{
             "error_message": joi_body_validation.error.stack,
             "error_data": joi_body_validation.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -131,13 +209,24 @@ router.post('/add',async (req,res)=>{
     const pg_client = await pool.connect()
     let[success,result] = await addDriver(pg_client,name,nik,phone,cost)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON addDriver"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -155,6 +244,11 @@ router.post('/add',async (req,res)=>{
 
 router.put('/update/:id',async (req,res)=>{
     
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     //joi validation param
 
     let joi_template_param = joi.number().required();
@@ -167,11 +261,18 @@ router.put('/update/:id',async (req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
-
-    
+ 
     //validation the body
     
     let joi_template_body = joi.object({
@@ -189,6 +290,14 @@ router.put('/update/:id',async (req,res)=>{
             "error_message": joi_body_validation.error.stack,
             "error_data": joi_body_validation.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -206,13 +315,24 @@ router.put('/update/:id',async (req,res)=>{
 
     let[dsuccess,dresult] = await viewDriverbyId(pg_client,driver_id)
     if(!dsuccess){
-        console.log(dresult);
+        
+        //Error
+        
+        console.error(dresult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": dresult,
             "error_data": "ON checkingDriverID"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -221,7 +341,10 @@ router.put('/update/:id',async (req,res)=>{
     //ID tidak ditemukan
 
     if(dresult.length === 0){ 
-        console.log(dresult);
+        
+        //Error
+        
+        console.error(dresult);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -231,6 +354,14 @@ router.put('/update/:id',async (req,res)=>{
                 "ID": driver_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -240,13 +371,24 @@ router.put('/update/:id',async (req,res)=>{
 
     let[success,result] = await updateDriver(pg_client,driver_id,name,nik,phone,cost)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON updateDriver"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -263,7 +405,12 @@ router.put('/update/:id',async (req,res)=>{
 //delete driver from driver id
 
 router.delete('/delete/:id',async (req,res)=>{
-      
+    
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+    
     //joi validation param
 
     let joi_template_param = joi.number().required();
@@ -276,6 +423,14 @@ router.delete('/delete/:id',async (req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -288,13 +443,24 @@ router.delete('/delete/:id',async (req,res)=>{
 
     let[dsuccess,dresult] = await viewDriverbyId(pg_client,driver_id)
     if(!dsuccess){
-        console.log(dresult);
+        
+        //Error
+        
+        console.error(dresult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": dresult,
             "error_data": "ON checkingDriverID"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -303,7 +469,10 @@ router.delete('/delete/:id',async (req,res)=>{
     //ID tidak ditemukan
 
     if(dresult.length === 0){ 
-        console.log(dresult);
+        
+        //Error
+        
+        console.error(dresult);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -313,6 +482,14 @@ router.delete('/delete/:id',async (req,res)=>{
                 "ID": driver_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -322,13 +499,24 @@ router.delete('/delete/:id',async (req,res)=>{
 
     let[success,result] = await deleteDriver(pg_client,driver_id)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON deleteDriver"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;

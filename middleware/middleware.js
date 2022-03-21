@@ -1,7 +1,24 @@
-const verify = require('./token').verifyAccessToken
-const pool = require('./Database/connection').pool
+//IMPORT
+const moment = require("moment")
 
-//take token from header
+//FUNCTION
+const verify = require('../utilities/token').verifyAccessToken
+
+//logging
+const logApiBasic = require('../utilities/slack').logApiBasic;
+
+//connection
+
+const pool = require('../utilities/connection').pool
+
+let head_route_name = "/middleware"
+
+/**
+ * mengambil token dari header
+ * 
+ * @param {*} req req dari middleware
+ * @returns 
+ */
 
 function getTokenFromHeader(req){
     let header_target = "authorization";
@@ -12,7 +29,13 @@ function getTokenFromHeader(req){
     return null;
 }
 
-//get customer data from middleware
+/**
+ * get customer data from middleware
+ * 
+ * @param {*} pg_client pool connection
+ * @param {number} id  customer id
+ * @returns 
+ */
 
 async function getCustomerData(pg_client,id){
     let query
@@ -34,16 +57,30 @@ async function getCustomerData(pg_client,id){
             success = true
         }
     } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
         success=false;
         result=err.message;
     }
     return[success,result]
 }
 
-//customer middleware
+//
+/**
+ * middleware for customer
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ * @returns 
+ */
 
 async function customerMiddleware(req,res,next){
+    
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     let data_toview_on_error = {
         "Header" : req.headers
     }
@@ -51,6 +88,8 @@ async function customerMiddleware(req,res,next){
     //get token from header
     
     const token = getTokenFromHeader(req)
+
+    //checking token
 
     if(token==null || token==undefined){
         const message = {
@@ -61,6 +100,14 @@ async function customerMiddleware(req,res,next){
                 "Request_Headers": req.headers
             }
         };
+         //LOGGING
+         logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(401).json(message);
         return; //END 
     }
@@ -70,16 +117,27 @@ async function customerMiddleware(req,res,next){
     let [verify_success,verify_result] = verify(token)
 
     console.log(JSON.stringify(verify_result, null, 2));
+    
+    //verify fail
+    
     if(!verify_success){
-      console.log(verify_result);
-      const message = {
-          "message": "Failed",
-          "error_key": "error_invalid_token",
-          "error_message": "Invalid token",
-          "error_data": {
-            "Request_Headers": req.headers
-        }
-      };
+        console.error(verify_result);
+        const message = {
+            "message": "Failed",
+            "error_key": "error_invalid_token",
+            "error_message": "Invalid token",
+            "error_data": {
+                "Request_Headers": req.headers
+            }   
+        };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
       res.status(401).json(message);
       return; //END
     }
@@ -87,7 +145,7 @@ async function customerMiddleware(req,res,next){
     //token verify found expired
 
     if(verify_result == "TokenExpiredError"){
-        console.log(verify_result);
+        console.error(verify_result);
         const message = {
             "message": "Failed",
             "error_key": "error_expired_token",
@@ -96,9 +154,19 @@ async function customerMiddleware(req,res,next){
               "Request_Headers": req.headers
           }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(401).json(message);
         return; //END
     }   
+
+    //get cust id from verify data
 
     let customer_id = verify_result["customer_id"];
 
@@ -108,14 +176,24 @@ async function customerMiddleware(req,res,next){
     
     let [customer_success, customer_result] = await getCustomerData(pg_client,customer_id);
 
+    // fail get customer
+
     if (!customer_success){
-        console.log(customer_result);
+        console.error(customer_result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": customer_result,
             "error_data": "ON getCustomerData"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         pg_client.release();
         return; //END
@@ -124,7 +202,7 @@ async function customerMiddleware(req,res,next){
     // ID NOT FOUND
 
     if (customer_result.length === 0){
-        console.log(customer_result);
+        console.error(customer_result);
         const message = {
             "message": "Failed",
             "error_key": "error_invalid_token",
@@ -133,7 +211,15 @@ async function customerMiddleware(req,res,next){
                 "ON": "getCustomerData",
                 "ID": customer_id
             }
-        }
+        };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(401).json(message);
         pg_client.release();
         return; //END

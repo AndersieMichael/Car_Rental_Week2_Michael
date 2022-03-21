@@ -1,46 +1,83 @@
+//IMPORT
+
 const express = require('express')
 const router = express.Router()
 const joi = require('joi')
+const moment = require("moment")
 
+//FUNCTION
 
-const allBooking = require('./function').allBooking
-const viewBookingById =  require('./function').viewbookingById
-const addBooking =  require('./function').addBooking
-const updateBooking =  require('./function').updateBooking
-const deleteBooking =  require('./function').deleteBooking
-const viewbookingbyCustomerId = require('./function').viewbookingbyCustomerId
+const allBooking = require('./functions').allBooking
+const viewBookingById =  require('./functions').viewbookingById
+const addBooking =  require('./functions').addBooking
+const updateBooking =  require('./functions').updateBooking
+const deleteBooking =  require('./functions').deleteBooking
+const viewbookingbyCustomerId = require('./functions').viewbookingbyCustomerId
 
-const carsById = require('./function').carsById
+const carsById = require('../car/functions').carsById
 
-const getMembershipDiscount = require('./function').getMembershipDiscount
+const getMembershipDiscount = require('./functions').getMembershipDiscount
 
-const getDriverPayment = require('./function').getDriverPayment
+const getDriverPayment = require('./functions').getDriverPayment
 
-const addDriverIncentive = require('./function').addDriverIncentive
-const updateDriverIncentive = require('./function').updateDriverIncentive
-const deleteDriverIncentive = require('./function').deleteDriverIncentive
-const pool = require('./Database/connection').pool
+const changeDateToUnix = require('./functions').convertToUnix
 
-const changeDateToUnix = require('./function').convertToUnix
+const addDriverIncentive = require('../driverIncentive/functions').addDriverIncentive
+const updateDriverIncentive = require('./functions').updateDriverIncentive
+const deleteDriverIncentive = require('./functions').deleteDriverIncentive
 
-const middleware = require('./middleware').customerMiddlware
+//logging
+const logApiBasic = require('../../utilities/slack').logApiBasic;
+
+//Connection 
+
+const pool = require('../../utilities/connection').pool
+
+//middleware
+
+const middleware = require('../../middleware/middleware').customerMiddlware
+
+let head_route_name = "/booking"
 
 //view all booking
 
 router.get('/',async (req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     const pg_client = await pool.connect()
+
+    //function all booking
+
     let[success,result] = await allBooking(pg_client)
+
+    //fail
+
     if(!success){
-        console.log(result);
+        
+        //error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON viewAllBooking"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
-        return;
+        return; //end
     }
 
     //success
@@ -48,13 +85,18 @@ router.get('/',async (req,res)=>{
     pg_client.release();
     let view =  changeDateToUnix(result)
     res.status(200).json({"message":"Success","data":view})
-    return;
+    return; //end
 
 })
 
 //view booking by bookingID
 
 router.get('/view/:id',async(req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
             
     //joi validation param
 
@@ -68,6 +110,14 @@ router.get('/view/:id',async(req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -75,23 +125,40 @@ router.get('/view/:id',async(req,res)=>{
     const booking_id = req.params.id
 
     const pg_client = await pool.connect()
+
+    //function view booking 
+
     let[success,result] = await viewBookingById(pg_client,booking_id)
     if(!success){
-        console.log(result);
+        
+        //error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON viewBookingByID"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
-        return;
+        return; //END
     }
       //ID tidak ditemukan
 
       if(result.length === 0){ 
-        console.log(result);
+        
+        //error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -101,6 +168,14 @@ router.get('/view/:id',async(req,res)=>{
                 "ID": booking_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -109,13 +184,18 @@ router.get('/view/:id',async(req,res)=>{
     pg_client.release();
     let view =  changeDateToUnix(result)
     res.status(200).json({"message":"Success","data":view})
-    return;
+    return; //END
 
 })
 
 //add bookingID
 
 router.post('/add',async(req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
 
     //validation the body
     
@@ -137,6 +217,14 @@ router.post('/add',async(req,res)=>{
             "error_message": joi_body_validation.error.stack,
             "error_data": joi_body_validation.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
 
@@ -162,44 +250,66 @@ router.post('/add',async(req,res)=>{
     
     let[carsSuccess,carsResult] = await carsById(pg_client,carid)
     if(!carsSuccess){
-        console.log(carsResult);
+        
+        //error
+        
+        console.error(carsResult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": carsResult,
             "error_data": "ON checkingCar"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
     }
     
-    //get membership
+    //get membership 
     
     let[membershipSuccess,membershipResult] = await getMembershipDiscount(pg_client,custid)
     if(!membershipSuccess){
-        console.log(membershipResult);
+        
+        //error
+        
+        console.error(membershipResult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": membershipResult,
             "error_data": "ON checkingMembership"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
-        return;
+        return; //END
+        
     }
 
-    //membership null
+    //get daily discount from membership
 
-    if(membershipResult.length === 0){
-        daily_discount=0
-    }
-    else{
-        daily_discount = membershipResult[0]["daily_discount"]
-    }
+    daily_discount = membershipResult[0]["daily_discount"]
+
+    //get rent price daily from car
 
     let harga = carsResult[0]["rent_price_daily"];
+
+    //calculate total cost
 
     const cost = harga * day;
     
@@ -210,56 +320,103 @@ router.post('/add',async(req,res)=>{
         //jika bookid==2 tp driverID=null
 
         if(driverid == null){
-            console.log("DriverID_NULL");
+            
+            //error
+            
+            console.error("DriverID_NULL");
             const message = {
                 "message": "Failed",
                 "error_key": "error_driver_null",
                 "error_message": "DriverID_NULL",
                 "error_data": "ON checkingDriver_if_bookType2"
             };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
             pg_client.release();
             res.status(200).json(message)
-            return;
+            return; //END
         }
         
-        else{    //ambil data driver 
+        else{    
+            
+            //ambil data driver 
+            
             let[driverPaymentSuccess,driverPaymentResult] = await getDriverPayment(pg_client,driverid)
             if(!driverPaymentSuccess){
-                console.log(driverPaymentResult);
+                
+                //error
+                
+                console.error(driverPaymentResult);
                 const message = {
                     "message": "Failed",
                     "error_key": "error_internal_server",
                     "error_message": driverPaymentResult,
                     "error_data": "ON getDriverPayment"
                 };
+                //LOGGING
+                logApiBasic( 
+                    `Request ${head_route_name}${request_namepath} Failed`,
+                    `REQUEST GOT AT : ${time_requested} \n` +
+                    "REQUEST BODY/PARAM : \n" +
+                    JSON.stringify('', null, 2),
+                    JSON.stringify(message, null, 2)
+                );
                 pg_client.release();
                 res.status(200).json(message)
-                return;
+                return; //END
             }
+
+            //get driver payment 
+
             let driverPayment =  driverPaymentResult[0]["daily_cost"];
+
+            //calculate total driver cost
+
             total = driverPayment * day
         }
        
+        //caculate insentive
+
         insentive = cost*5/100
 
     }else{
+
         driverid=null
         total = 0
     }
 
-    discount = cost * daily_discount/100
+    //calculate discount from total cost * daily discount
+
+    discount = cost * daily_discount
 
     //create booking
     
     let[success,result] = await addBooking(pg_client,custid,carid,start,end,cost,status,discount,booktypeid,driverid,total);
     if(!success){
-        console.log(result);
+        
+        //error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON addBooking"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -271,23 +428,34 @@ router.post('/add',async(req,res)=>{
             let booking_id = result[0]["booking_id"];
             let[driverIncentiveSuccess,driverIncentiveResult] = await addDriverIncentive(pg_client,booking_id,insentive);
             if(!driverIncentiveSuccess){
-                console.log(driverIncentiveResult);
+                
+                //error
+                
+                console.error(driverIncentiveResult);
                 const message = {
                     "message": "Failed",
                     "error_key": "error_internal_server",
                     "error_message": driverIncentiveResult,
                     "error_data": "ON addDriverIncentiveFromBooking"
                 };
+                //LOGGING
+                logApiBasic( 
+                    `Request ${head_route_name}${request_namepath} Failed`,
+                    `REQUEST GOT AT : ${time_requested} \n` +
+                    "REQUEST BODY/PARAM : \n" +
+                    JSON.stringify('', null, 2),
+                    JSON.stringify(message, null, 2)
+                );
                 pg_client.release();
                 res.status(200).json(message)
-                return;
+                return; //END
             }
             
             //success
 
             pg_client.release();
             res.status(200).json({"message":"Success","data":driverIncentiveResult})
-            return;
+            return; //END
 
         }
 
@@ -295,7 +463,7 @@ router.post('/add',async(req,res)=>{
 
         pg_client.release();
         res.status(200).json({"message":"Success","data":result})
-        return;
+        return; //END
 
     }
     
@@ -305,6 +473,11 @@ router.post('/add',async(req,res)=>{
 //update booking from bookingID
 
 router.put('/update/:id',async(req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
             
     //joi validation param
 
@@ -318,6 +491,14 @@ router.put('/update/:id',async(req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -342,6 +523,14 @@ router.put('/update/:id',async(req,res)=>{
             "error_message": joi_body_validation.error.stack,
             "error_data": joi_body_validation.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
 
@@ -355,9 +544,13 @@ router.put('/update/:id',async(req,res)=>{
     let driverid = joi_body_validation.value["driverid"];
 
     const booking_id = req.params.id
+
+    //calculate date range
+
     const start = new Date(startT*1000);
     const end = new Date(endT*1000);
     const day = new Date(end - start).getDate()
+
     let discount,daily_discount,total,insentive =0
 
     const pg_client = await pool.connect()
@@ -365,22 +558,39 @@ router.put('/update/:id',async(req,res)=>{
     //checking if id exist
     
     let[bsuccess,bresult] = await viewBookingById(pg_client,booking_id)
+
+    //fail
+    
     if(!bsuccess){
-        console.log(bresult);
+        
+        //error
+        
+        console.error(bresult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": bresult,
             "error_data": "ON checkingBookingID"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
-        return;
+        return; //END
     }
       //ID tidak ditemukan
 
       if(bresult.length === 0){ 
-        console.log(bresult);
+        
+        //error
+        
+        console.error(bresult);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -390,53 +600,118 @@ router.put('/update/:id',async(req,res)=>{
                 "ID": booking_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
     }
 
+    let checkBookType = bresult[0]["booktype_id"]
+
+    //checking id booktypeid change
+
+    if(checkBookType!=booktypeid){
+        
+        //error
+        
+        console.error("check book deference!!!");
+        const message = {
+            "message": "Failed",
+            "error_key": "error_booktype_id_change",
+            "error_message": "booktypeID cannot be change",
+            "error_data": "ON checkingbookTypeID"
+        };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
+        pg_client.release();
+        res.status(200).json(message)
+        return; //END
+
+    }
+
     //get car id
 
     let[carsSuccess,carsResult] = await carsById(pg_client,carid)
+
+    //fail
+
     if(!carsSuccess){
-        console.log(carsResult);
+        
+        //error
+        
+        console.error(carsResult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": carsResult,
             "error_data": "ON checkingCarID"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
-        return;
+        return; //END
     }
 
     //get membership
 
     let[membershipSuccess,membershipResult] = await getMembershipDiscount(pg_client,custid)
+
+    //fail
+
     if(!membershipSuccess){
-        console.log(membershipresult);
+        
+        //error
+        
+        console.error(membershipResult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
-            "error_message": membershipresult,
+            "error_message": membershipResult,
             "error_data": "ON checkingMembership"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
-        return;
+        return; //END
     }
 
-    //membership null
+    //get daily discount from membership
 
-    if(membershipResult.length === 0){
-        daily_discount=0
-    }
-    else{
-        daily_discount = membershipResult[0]["daily_discount"]
-    }
+    daily_discount = membershipResult[0]["daily_discount"]
+    
+    //get rent price daily
 
     let harga = carsResult[0]["rent_price_daily"];
+
+    //calculate cost
+
     const cost = harga * day;
 
     //checking booktype for calucating driver cost
@@ -446,27 +721,69 @@ router.put('/update/:id',async(req,res)=>{
         //jika bookid==2 tp driverID=null
 
         if(driverid == null){
-            res.status(400).send("You must add Driver ID !!")
-         }else{    //ambil data driver 
+            
+            //error
+            
+            console.error("DriverID_NULL");
+            const message = {
+                "message": "Failed",
+                "error_key": "error_driver_null",
+                "error_message": "DriverID_NULL",
+                "error_data": "ON checkingDriver_if_bookType2"
+            };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
+            pg_client.release();
+            res.status(200).json(message)
+            return; //END
+
+        }else{    
+            
+            //ambil data driver 
+            
             let[driverPaymentSuccess,driverPaymentResult] = await getDriverPayment(pg_client,driverid)
             if(!driverPaymentSuccess){
-                console.log(driverPaymentresult);
+                
+                //error
+                
+                console.error(driverPaymentResult);
                 const message = {
                     "message": "Failed",
                     "error_key": "error_internal_server",
-                    "error_message": driverPaymentresult,
+                    "error_message": driverPaymentResult,
                     "error_data": "ON checkingDriverPaymentOnBooking"
                 };
+                //LOGGING
+                logApiBasic( 
+                    `Request ${head_route_name}${request_namepath} Failed`,
+                    `REQUEST GOT AT : ${time_requested} \n` +
+                    "REQUEST BODY/PARAM : \n" +
+                    JSON.stringify('', null, 2),
+                    JSON.stringify(message, null, 2)
+                );
                 pg_client.release();
                 res.status(200).json(message)
-                return;
+                return; //END
 
             }
 
+            //get driver payment
+
             let driverPayment =  driverPaymentResult[0]["daily_cost"];
+            
+            //calculate total driver cost 
+
             total = driverPayment * day
-         }
-       
+        }
+        
+        //calcluate insentive
+
         insentive = cost*5/100
 
     }else{
@@ -476,22 +793,33 @@ router.put('/update/:id',async(req,res)=>{
 
     //get discount
 
-    discount = cost * daily_discount/100
+    discount = cost * daily_discount
 
     //update booking
 
     let[success,result] = await updateBooking(pg_client,booking_id,custid,carid,start,end,cost,status,discount,booktypeid,driverid,total)
     if(!success){
-        console.log(result);
+        
+        //error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON updateBooking"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
-        return;
+        return; //END
     }else{
 
         //update driver incentive if booktypeid == 2
@@ -499,23 +827,34 @@ router.put('/update/:id',async(req,res)=>{
         if(booktypeid!=1){
             let[driverIncentiveSuccess,driverIncentiveResult] = await updateDriverIncentive(pg_client,booking_id,insentive);
             if(!driverIncentiveSuccess){
-                console.log(driverIncentiveResult);
+                
+                //error
+                
+                console.error(driverIncentiveResult);
                 const message = {
                     "message": "Failed",
                     "error_key": "error_internal_server",
                     "error_message": driverIncentiveResult,
                     "error_data": "ON updateDriverIncentiveOnBooking"
                 };
+                //LOGGING
+                logApiBasic( 
+                    `Request ${head_route_name}${request_namepath} Failed`,
+                    `REQUEST GOT AT : ${time_requested} \n` +
+                    "REQUEST BODY/PARAM : \n" +
+                    JSON.stringify('', null, 2),
+                    JSON.stringify(message, null, 2)
+                );
                 pg_client.release();
                 res.status(200).json(message)
-                return;
+                return; //END
             }
             
             //success
 
             pg_client.release();
             res.status(200).json({"message":"Success","data":driverIncentiveResult})
-            return;
+            return; //END
 
         }
 
@@ -523,7 +862,7 @@ router.put('/update/:id',async(req,res)=>{
 
         pg_client.release();
         res.status(200).json({"message":"Success","data":result})
-        return;
+        return; //END
 
     }
 })
@@ -531,6 +870,11 @@ router.put('/update/:id',async(req,res)=>{
 //delete booking by booking id
 
 router.delete('/delete/:id',async(req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
             
     //joi validation param
 
@@ -544,6 +888,14 @@ router.delete('/delete/:id',async(req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -555,13 +907,24 @@ router.delete('/delete/:id',async(req,res)=>{
     
     let[bsuccess,bresult] = await viewBookingById(pg_client,booking_id)
     if(!bsuccess){
-        console.log(bresult);
+        
+        //error
+        
+        console.error(bresult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": bresult,
             "error_data": "ON checkingBooking"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -569,7 +932,10 @@ router.delete('/delete/:id',async(req,res)=>{
       //ID tidak ditemukan
 
       if(bresult.length === 0){ 
-        console.log(bresult);
+        
+        //error
+        
+        console.error(bresult);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -579,6 +945,14 @@ router.delete('/delete/:id',async(req,res)=>{
                 "ID": booking_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -589,13 +963,24 @@ router.delete('/delete/:id',async(req,res)=>{
     let[driverIncentiveSuccess,driverIncentiveResult] = await deleteDriverIncentive(pg_client,booking_id);
 
     if(!driverIncentiveSuccess){
-        console.log(driverIncentiveResult);
+        
+        //error
+        
+        console.error(driverIncentiveResult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": driverIncentiveResult,
             "error_data": "ON deleteDriverIncentiveOnBooking"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -606,13 +991,24 @@ router.delete('/delete/:id',async(req,res)=>{
 
         let[success,result] = await deleteBooking(pg_client,booking_id)
         if(!success){
-            console.log(result);
+            
+            //error
+            
+            console.error(result);
             const message = {
                 "message": "Failed",
                 "error_key": "error_internal_server",
                 "error_message": result,
                 "error_data": "ON deleteBooking"
             };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
             pg_client.release();
             res.status(200).json(message)
             return;
@@ -630,11 +1026,20 @@ router.delete('/delete/:id',async(req,res)=>{
 //view booking by middleware
 
 router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     //get id from middleware
 
     let cust_id = res.locals.curr_customer_id;
     
     const pg_client = await pool.connect()
+
+    //view booking from customer ID
+
     let[success,result] = await viewbookingbyCustomerId(pg_client,cust_id)
     if(!success){
         const message = {
@@ -643,14 +1048,25 @@ router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
             "error_message": result,
             "error_data": "ON viewbookingByMiddleware"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
     }
       //ID tidak ditemukan
       
-      if(result.length === 0){ 
-          console.log(result);
+    if(result.length === 0){ 
+        
+        //error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -660,6 +1076,14 @@ router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
                 "ID": cust_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -670,13 +1094,18 @@ router.get('/viewBooking/byMiddleware',middleware,async(req,res)=>{
     pg_client.release();
     let view =  changeDateToUnix(result)
     res.status(200).json({"message":"Success","data":view})
-    return;
+    return; //END
     
 })
 
 //delete booking by booking id and checking by middleware
 
 router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
             
     //joi validation param
 
@@ -690,25 +1119,45 @@ router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
 
     const booking_id = req.params.id
     let cust_id = res.locals.curr_customer_id;
+
     const pg_client = await pool.connect()
 
     //checking if id exist
     
     let[bsuccess,bresult] = await viewBookingById(pg_client,booking_id)
     if(!bsuccess){
-        console.log(bresult);
+        
+        //error
+        
+        console.error(bresult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": bresult,
             "error_data": "ON checkingBookingFromMiddleware"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -716,7 +1165,10 @@ router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
     //ID tidak ditemukan
 
     if(bresult.length === 0){ 
-        console.log(bresult);
+        
+        //error
+        
+        console.error(bresult);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -726,6 +1178,14 @@ router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
                 "ID": booking_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -743,6 +1203,14 @@ router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
                 "ID": booking_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -752,39 +1220,61 @@ router.delete('/delete/fromMiddleware/:id',middleware,async(req,res)=>{
 
     let[driverIncentiveSuccess,driverIncentiveResult] = await deleteDriverIncentive(pg_client,booking_id);
     if(!driverIncentiveSuccess){
-        console.log(driverIncentiveResult);
+        
+        //error
+        
+        console.error(driverIncentiveResult);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": driverIncentiveResult,
             "error_data": "ON deleteDriverIncentiveOnBookingFromMiddleware"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
-        return;
+        return; //END
     }else{
 
         //delete booking
                 
         let[success,result] = await deleteBooking(pg_client,booking_id)
         if(!success){
-            console.log(result);
+            
+            //error
+            
+            console.error(result);
             const message = {
                 "message": "Failed",
                 "error_key": "error_internal_server",
                 "error_message": result,
                 "error_data": "ON deleteBookingFromMiddleware"
             };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
             pg_client.release();
             res.status(200).json(message)
-            return;
+            return; //END
         }
         
         //success
         
         pg_client.release();
         res.status(200).json({"message":"Success","data":result})
-        return;
+        return; //END
 
     }
     

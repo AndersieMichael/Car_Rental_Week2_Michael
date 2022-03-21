@@ -4,12 +4,14 @@ const port = 8080
 
 app.use(express.json())
 
-const Customer = require('./customer')
-const cars = require('./car')
-const booking = require('./booking')
-const membership = require('./membership')
-const driver = require('./driver')
-const incentive = require('./driverIncentive')
+const Customer = require('./routes/customer/customer')
+const cars = require('./routes/car/car')
+const booking = require('./routes/booking/booking')
+const membership = require('./routes/membership/membership')
+const driver = require('./routes/driver/driver')
+const incentive = require('./routes/driverIncentive/driverIncentive')
+
+const debugLog = require('./debug')
 
 app.get('/',(req,res)=>{
     res.send('WELCOME TO CAR RENTAL')
@@ -25,3 +27,5 @@ app.use('/incentive',incentive);
 app.listen(port,()=>{
     console.log(`server is listening in port ${port}`);
 })
+
+debugLog("This is a debug message");

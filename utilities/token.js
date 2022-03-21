@@ -1,14 +1,22 @@
+//IMPORT
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 
-let key_private = fs.readFileSync('./tokenFile/private.key','utf8');
-let key_public = fs.readFileSync('./tokenFile/public.key','utf8');
-const refresh_key ="test";
+//read key
+let key_private = fs.readFileSync('./required/tokenFile/private.key','utf8');
+let key_public = fs.readFileSync('./required/tokenFile/public.key','utf8');
+let refresh_key ="test";
+
+/**
+ * create refresh token
+ * 
+ * @param {object} Customer_data customer data 
+ * @returns 
+ */
 
 function generateRefreshToken(Customer_data){
     let success;
     let refresh_token;
-
     try {
         refresh_token = jwt.sign(Customer_data,refresh_key,{
             expiresIn:'1d',
@@ -18,13 +26,20 @@ function generateRefreshToken(Customer_data){
         success=true;
 
     } catch (err) {
-        console.log(err.message);
+        console.error(err.message);
         refresh_token = err.message;
         success = false;
     }
     return[success,refresh_token]
 
 }
+
+/**
+ * create active token
+ * 
+ * @param {object} Customer_data customer data 
+ * @returns 
+ */
 
 function generateActiveToken(Customer_data){
     let success;
@@ -38,13 +53,25 @@ function generateActiveToken(Customer_data){
         success = true;
         
     } catch (err) {
-        console.log(err.message);
+        console.error(err.message);
         access_token=err.message;
         success = false;
     }
 
+    //change refresh key with access token
+
+    refresh_key = access_token;
+
     return [success,access_token]
 }
+
+
+/**
+ * checking active token still active or not
+ * 
+ * @param {string} token active token
+ * @returns 
+ */
 
 function verifyAccessToken(token){
     let success
@@ -57,7 +84,7 @@ function verifyAccessToken(token){
         success = true
 
     } catch (err) {
-        console.log(err.message);
+        console.error(err.message);
         valid_data = err.message;
         success = false;
 
@@ -70,6 +97,13 @@ function verifyAccessToken(token){
 
     return [success,valid_data];
 }
+
+/**
+ * checking refresh token still active or not
+ * 
+ * @param {string} token refresh token
+ * @returns 
+ */
 
 function verifyRefreshToken(token){
     let success;
@@ -84,7 +118,7 @@ function verifyRefreshToken(token){
         success=true;
 
     } catch (err) {
-        console.log(err.message);
+        console.error(err.message);
         refresh_token = err.message;
         success = false;
     }

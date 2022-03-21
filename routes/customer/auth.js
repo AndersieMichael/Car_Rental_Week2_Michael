@@ -1,9 +1,24 @@
-const generateRefreshToken = require('./token').generateRefreshToken;
-const generateActiveToken = require('./token').generateActiveToken
-const verifyRefreshToken = require('./token').verifyRefreshToken
+
+//IMPORT
+
 const bcrypt = require('bcrypt')
 
-//login Customer
+//function
+
+const generateRefreshToken = require('../../utilities/token').generateRefreshToken;
+const generateActiveToken = require('../../utilities/token').generateActiveToken
+const verifyRefreshToken = require('../../utilities/token').verifyRefreshToken
+
+
+
+/**
+ * login Customer
+ * 
+ * @param {*} pg_client pool connection 
+ * @param {string} password customer password not encrypt
+ * @param {string} name customer name
+ * @returns 
+ */
 
 async function loginCustomer(pg_client,password,name){
     let query
@@ -27,7 +42,7 @@ async function loginCustomer(pg_client,password,name){
             success = true
         }
     } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
         success=false;
         result=err.message;
     }
@@ -57,12 +72,19 @@ async function loginCustomer(pg_client,password,name){
     delete data["token_key"]
     delete data["password"]
 
+    //generate active token 
+
+    let[Active_token_success,Active_token_result] = generateActiveToken(data)
+    if(!Active_token_success){
+       console.error(Active_token_success);
+    }
+
     //generate Refresh token
     
     let[refresh_token_success,refresh_token_result] = generateRefreshToken(data)
 
     if(!refresh_token_success){
-        console.log(refresh_token_result);
+        console.error(refresh_token_result);
     }
 
 
@@ -83,16 +105,9 @@ async function loginCustomer(pg_client,password,name){
             success = true
         }
     } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
         success=false;
         result=err.message;
-    }
-
-    //generate active token 
-
-    let[Active_token_success,Active_token_result] = generateActiveToken(data)
-    if(!Active_token_success){
-        console.log(Active_token_success);
     }
 
     result = {
@@ -103,7 +118,14 @@ async function loginCustomer(pg_client,password,name){
     return[success,result]
 }
 
-//logoutCustomer
+
+/**
+ * logoutCustomer
+ * 
+ * @param {*} pg_client pool connection 
+ * @param {number} id customer id 
+ * @returns 
+ */
 
 async function logoutCustomer(pg_client,id){
     let query
@@ -127,7 +149,7 @@ async function logoutCustomer(pg_client,id){
             success = true
         }
     } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
         success=false;
         result=err.message;
     }
@@ -137,7 +159,14 @@ async function logoutCustomer(pg_client,id){
     return[success,result]
 }
 
-//checking refresh token
+
+/**
+ * checking refresh token
+ * 
+ * @param {*} pg_client pool connection 
+ * @param {string} refresh_token refresh token
+ * @returns 
+ */
 
 async function validateRefreshToken(pg_client,refresh_token){
     let query
@@ -150,7 +179,7 @@ async function validateRefreshToken(pg_client,refresh_token){
     let[refresh_token_success,refresh_token_result] = verifyRefreshToken(refresh_token)
 
     if(!refresh_token_success){
-        console.log(refresh_token_result);
+        console.error(refresh_token_result);
         success = false;
         result = refresh_token_result;
         return [
@@ -187,14 +216,14 @@ async function validateRefreshToken(pg_client,refresh_token){
             success = true
         }
     } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
         success=false;
         result=err.message;
         return[success,result];
     }
 
     //compare insert refresh token with refresh token in database
-    console.log(tokenInDatabase);
+    
     let tokenInDatabase = result[0]["token_key"];
     if(refresh_token != tokenInDatabase){
         success = true;
@@ -207,13 +236,19 @@ async function validateRefreshToken(pg_client,refresh_token){
     
     let data = refresh_token_result
     
+    //get name from the data 
+    
+    let name = data["name"]
+    
+    //delete exp from data 
+
     delete data["exp"]
   
     //generate new active token
 
     let[Active_token_success,Active_token_result] = generateActiveToken(refresh_token_result)
     if(!Active_token_success){
-        console.log(Active_token_result);
+        console.error(Active_token_result);
         success = false;
         result = Active_token_result;
         return [
@@ -222,7 +257,40 @@ async function validateRefreshToken(pg_client,refresh_token){
         ]; 
     }
 
+    //generate Refresh token
+    
+    let[new_refresh_token_success,new_refresh_token_result] = generateRefreshToken(data)
+
+    if(!new_refresh_token_success){
+        console.error(new_refresh_token_result);
+    }
+
+   
+
+    // //update and insert token key in database 
+
+    try {
+        query= `update customer 
+                set "token_key" =$2
+                where name =$1`
+        value=[
+            name,
+            new_refresh_token_result
+        ]
+        const temp = await pg_client.query(query,value)
+        if(temp==null || temp==undefined){
+            throw new Error(`query Resulted on: ${temp}`)
+        }else{
+            success = true
+        }
+    } catch (error) {
+        console.error(error.message);
+        success=false;
+        result=err.message;
+    }
+
     result = {
+        "Refresh_Token": new_refresh_token_result,
         "Access_Token" : Active_token_result
     }
 

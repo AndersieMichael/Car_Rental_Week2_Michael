@@ -1,7 +1,11 @@
+//IMPORT
+
 const express = require('express')
 const router = express.Router()
 const joi = require('joi')
 const bcrypt = require('bcrypt')
+const moment = require("moment")
+
 //function
 
 const allCustomer = require('./function').allCustomer
@@ -9,29 +13,42 @@ const customerById = require('./function').customerById
 const addCustomer = require('./function').addCustomer
 const deleteCustomer = require('./function').deleteCustomer
 const updateCustomer = require('./function').updateCustomer
-const viewMembershipById = require('./function').viewMembershipById
+const viewMembershipById = require('../membership/functions').viewMembershipById
 const checkingNameExist = require('./function').checkingNameExist
 
 const login = require('./auth').loginCustomer
 const logout = require('./auth').logoutCustomer
 const verifyRefreshToken = require('./auth').validateRefreshToken
 
+//logging
+const logApiBasic = require('../../utilities/slack').logApiBasic;
+
 //conection to database
 
-const pool = require('./Database/connection').pool
+const pool = require('../../utilities/connection').pool
 
 //middleware
 
-const middleware = require('./middleware').customerMiddlware
+const middleware = require('../../middleware/middleware').customerMiddlware
+
+let head_route_name = "/customer"
 
 //view all customer data
 
 router.get('/',async (req,res)=>{
+    
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     const pg_client = await pool.connect()
     let[success,result] = await allCustomer(pg_client)
     if(!success){
-
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         pg_client.release();
         
         const message = {
@@ -40,6 +57,15 @@ router.get('/',async (req,res)=>{
             "error_message": result,
             "error_data": "ON viewAllCustomer"
         };
+        
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
 
         res.status(200).json(message)
         return;
@@ -56,12 +82,20 @@ router.get('/',async (req,res)=>{
 //view customer by customer ID
 
 router.get('/view/:id',async(req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
     
     //joi validation param
 
     let joi_template_param = joi.number().required();
 
     let joi_validate_param = joi_template_param.validate(req.params.id);
+    
+    //Error
+    
     if(joi_validate_param.error){
         const message = {
             "message": "Failed",
@@ -69,6 +103,14 @@ router.get('/view/:id',async(req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -79,7 +121,10 @@ router.get('/view/:id',async(req,res)=>{
     const pg_client = await pool.connect()
     let[success,result] = await customerById(pg_client,customer_id)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         pg_client.release();
         
         const message = {
@@ -88,7 +133,14 @@ router.get('/view/:id',async(req,res)=>{
             "error_message": result,
             "error_data": "ON viewCustomerByID"
         };
-
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message)
         return;
     }
@@ -96,7 +148,10 @@ router.get('/view/:id',async(req,res)=>{
     //ID tidak ditemukan
 
     if(result.length === 0){ 
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -106,6 +161,14 @@ router.get('/view/:id',async(req,res)=>{
                 "ID": customer_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -121,6 +184,11 @@ router.get('/view/:id',async(req,res)=>{
 //add customer
 
 router.post('/add',async(req,res)=>{
+
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
     
     //validation the body
     
@@ -128,8 +196,8 @@ router.post('/add',async(req,res)=>{
         "name": joi.string().required(),
         "nik": joi.string().required(),
         "phone": joi.string().required(),
-        "membership": joi.required(),
-        "password":joi.string().required()
+        "membership": joi.number().required(),
+        "password":joi.string().required(),
     }).required();
     
     let joi_body_validation = joi_template_body.validate(req.body);
@@ -140,6 +208,14 @@ router.post('/add',async(req,res)=>{
             "error_message": joi_body_validation.error.stack,
             "error_data": joi_body_validation.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
 
@@ -158,7 +234,10 @@ router.post('/add',async(req,res)=>{
 
         let[msuccess,mresult] = await viewMembershipById(pg_client,membership)
         if(!msuccess){
-            console.log(mresult);
+            
+            //Error
+            
+            console.error(mresult);
             pg_client.release();
             
             const message = {
@@ -167,6 +246,14 @@ router.post('/add',async(req,res)=>{
                 "error_message": mresult,
                 "error_data": "ON checkingMembershipByID"
             };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
 
             res.status(200).json(message)
             return;
@@ -181,6 +268,14 @@ router.post('/add',async(req,res)=>{
                     "ID": membership
                 }
             };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
             pg_client.release();
             res.status(200).json(message);
             return; //END
@@ -189,7 +284,10 @@ router.post('/add',async(req,res)=>{
 
     let[nsuccess,nresult] = await checkingNameExist(pg_client,name)
         if(!nsuccess){
-            console.log(nresult);
+            
+            //Error
+            
+            console.error(nresult);
             pg_client.release();
             
             const message = {
@@ -198,6 +296,14 @@ router.post('/add',async(req,res)=>{
                 "error_message": nresult,
                 "error_data": "ON checkingNameExist"
             };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
 
             res.status(200).json(message)
             return;
@@ -212,18 +318,29 @@ router.post('/add',async(req,res)=>{
                     "Name": name
                 }
             };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
             pg_client.release();
             res.status(200).json(message);
             return; //END
         }
 
     let newPass = await bcrypt.hash(password,10)
-        console.log(newPass);
+
     //insert to database
 
     let[success,result] = await addCustomer(pg_client,name,nik,phone,membership,newPass)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         pg_client.release();
         
         const message = {
@@ -232,6 +349,14 @@ router.post('/add',async(req,res)=>{
             "error_message": result,
             "error_data": "ON addCustomer"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
 
         res.status(200).json(message)
         return;
@@ -248,6 +373,11 @@ router.post('/add',async(req,res)=>{
 
 router.put('/update/:id',async(req,res)=>{
     
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     //joi validation param
 
     let joi_template_param = joi.number().required();
@@ -260,6 +390,14 @@ router.put('/update/:id',async(req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -271,7 +409,8 @@ router.put('/update/:id',async(req,res)=>{
         "name": joi.string().required(),
         "nik": joi.string().required(),
         "phone": joi.string().required(),
-        "membership": joi.required(),
+        "membership": joi.number().required(),
+        "password":joi.string().required(),
     }).required();
     
     let joi_body_validation = joi_template_body.validate(req.body);
@@ -282,6 +421,14 @@ router.put('/update/:id',async(req,res)=>{
             "error_message": joi_body_validation.error.stack,
             "error_data": joi_body_validation.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -290,13 +437,17 @@ router.put('/update/:id',async(req,res)=>{
     let nik = joi_body_validation.value["nik"];
     let phone = joi_body_validation.value["phone"];
     let membership = joi_body_validation.value["membership"];
+    let password = joi_body_validation.value["password"];
 
 
     const customer_id = req.params.id
     const pg_client = await pool.connect()
     let[csuccess,cresult] = await customerById(pg_client,customer_id)
     if(!csuccess){
-        console.log(cresult);
+        
+        //Error
+        
+        console.error(cresult);
         pg_client.release();
         
         const message = {
@@ -305,6 +456,14 @@ router.put('/update/:id',async(req,res)=>{
             "error_message": cresult,
             "error_data": "ON checkingcustomerByID"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
 
         res.status(200).json(message)
         return;
@@ -313,7 +472,10 @@ router.put('/update/:id',async(req,res)=>{
     //ID tidak ditemukan
 
     if(cresult.length === 0){ 
-        console.log(cresult);
+        
+        //Error
+        
+        console.error(cresult);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -323,6 +485,14 @@ router.put('/update/:id',async(req,res)=>{
                 "ID": customer_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -337,7 +507,10 @@ router.put('/update/:id',async(req,res)=>{
  
         let[msuccess,mresult] = await viewMembershipById(pg_client,membership)
         if(!msuccess){
-            console.log(mresult);
+            
+            //Error
+            
+            console.error(mresult);
             pg_client.release();
             
             const message = {
@@ -346,12 +519,20 @@ router.put('/update/:id',async(req,res)=>{
                 "error_message": mresult,
                 "error_data": "ON viewAllCustomer"
             };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
 
             res.status(200).json(message)
             return;
         }
         if(mresult.length === 0){
-             const message = {
+            const message = {
                 "message": "Failed",
                 "error_key": "error_id_not_found",
                 "error_message": "Cant found data with id :: " + membership.toString(),
@@ -360,18 +541,30 @@ router.put('/update/:id',async(req,res)=>{
                     "ID": membership
                 }
             };
+            //LOGGING
+            logApiBasic( 
+                `Request ${head_route_name}${request_namepath} Failed`,
+                `REQUEST GOT AT : ${time_requested} \n` +
+                "REQUEST BODY/PARAM : \n" +
+                JSON.stringify('', null, 2),
+                JSON.stringify(message, null, 2)
+            );
             pg_client.release();
             res.status(200).json(message);
             return; //END
         }
     }
- 
+    
+    let newPass = await bcrypt.hash(password,10)
 
     //send to update data
 
-    let[success,result] = await updateCustomer(pg_client,customer_id,name,nik,phone,membership)
+    let[success,result] = await updateCustomer(pg_client,customer_id,name,nik,phone,membership,newPass)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         pg_client.release();
         
         const message = {
@@ -380,6 +573,14 @@ router.put('/update/:id',async(req,res)=>{
             "error_message": result,
             "error_data": "ON UpdateCustomer"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
 
         res.status(200).json(message)
         return;
@@ -397,6 +598,11 @@ router.put('/update/:id',async(req,res)=>{
 
 router.delete('/delete/:id',async(req,res)=>{
 
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     //joi validation param
 
     let joi_template_param = joi.number().required();
@@ -409,6 +615,14 @@ router.delete('/delete/:id',async(req,res)=>{
             "error_message": joi_validate_param.error.stack,
             "error_data": joi_validate_param.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
     }
@@ -417,7 +631,10 @@ router.delete('/delete/:id',async(req,res)=>{
     const pg_client = await pool.connect()
     let[csuccess,cresult] = await customerById(pg_client,customer_id)
     if(!csuccess){
-        console.log(cresult);
+        
+        //Error
+        
+        console.error(cresult);
         pg_client.release();
         
         const message = {
@@ -426,6 +643,14 @@ router.delete('/delete/:id',async(req,res)=>{
             "error_message": cresult,
             "error_data": "ON checkingCustomerByID"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
 
         res.status(200).json(message)
         return;
@@ -434,7 +659,10 @@ router.delete('/delete/:id',async(req,res)=>{
     //ID tidak ditemukan
 
     if(cresult.length === 0){ 
-        console.log(cresult);
+        
+        //Error
+        
+        console.error(cresult);
         const message = {
             "message": "Failed",
             "error_key": "error_id_not_found",
@@ -444,6 +672,14 @@ router.delete('/delete/:id',async(req,res)=>{
                 "ID": customer_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -453,7 +689,10 @@ router.delete('/delete/:id',async(req,res)=>{
 
     let[success,result] = await deleteCustomer(pg_client,customer_id)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         pg_client.release();
         
         const message = {
@@ -462,6 +701,14 @@ router.delete('/delete/:id',async(req,res)=>{
             "error_message": result,
             "error_data": "ON deleteCustomer"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
 
         res.status(200).json(message)
         return;
@@ -477,7 +724,12 @@ router.delete('/delete/:id',async(req,res)=>{
 //customer login
 
 router.post('/login',async(req,res)=>{
-       
+    
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     //validation the body
     
     let joi_template_body = joi.object({
@@ -493,6 +745,14 @@ router.post('/login',async(req,res)=>{
             "error_message": joi_body_validation.error.stack,
             "error_data": joi_body_validation.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
 
@@ -509,7 +769,10 @@ router.post('/login',async(req,res)=>{
 
     let[success,result] = await login(pg_client,password,name)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         pg_client.release();
         
         const message = {
@@ -518,6 +781,14 @@ router.post('/login',async(req,res)=>{
             "error_message": result,
             "error_data": "ON tryToLogin"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
 
         res.status(200).json(message)
         return;
@@ -526,7 +797,10 @@ router.post('/login',async(req,res)=>{
      //ID tidak ditemukan
 
     if(result =="INVALID_PASSWORD"){ 
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_invalid_password",
@@ -535,6 +809,14 @@ router.post('/login',async(req,res)=>{
                 "ON": "loginCustomer"
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -551,6 +833,14 @@ router.post('/login',async(req,res)=>{
                 "ON": "loginCustomer"
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -567,7 +857,12 @@ router.post('/login',async(req,res)=>{
 //view profile from middleware
 
 router.get('/get/my_profile',middleware,async(req,res)=>{
-       
+    
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+    
     let cust_id = res.locals.curr_customer_id;
 
     const pg_client = await pool.connect()
@@ -576,7 +871,10 @@ router.get('/get/my_profile',middleware,async(req,res)=>{
 
     let[success,result] = await customerById(pg_client,cust_id)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         pg_client.release();
         
         const message = {
@@ -585,6 +883,14 @@ router.get('/get/my_profile',middleware,async(req,res)=>{
             "error_message": result,
             "error_data": "ON viewCustomerByMiddleware"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
 
         res.status(200).json(message)
         return;
@@ -603,6 +909,14 @@ router.get('/get/my_profile',middleware,async(req,res)=>{
                 "ID": cust_id
             }
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -620,6 +934,12 @@ router.get('/get/my_profile',middleware,async(req,res)=>{
 //logout customer from middleware
 
 router.post('/logout',middleware,async(req,res)=>{
+    
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+
     let cust_id = res.locals.curr_customer_id;
 
     const pg_client = await pool.connect()
@@ -628,7 +948,10 @@ router.post('/logout',middleware,async(req,res)=>{
 
     let[success,result] = await logout(pg_client,cust_id)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         pg_client.release();
         
         const message = {
@@ -637,6 +960,14 @@ router.post('/logout',middleware,async(req,res)=>{
             "error_message": result,
             "error_data": "ON tryToLogout"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
 
         res.status(200).json(message)
         return;
@@ -652,7 +983,12 @@ router.post('/logout',middleware,async(req,res)=>{
 //refresh token if active token expired
 
 router.post('/refresh_token',async(req,res)=>{
-       
+    
+    //Basic Info
+    
+    let request_namepath = req.path
+    let time_requested = moment(Date.now())
+    
     //validation the body
     
     let joi_template_body = joi.object({
@@ -667,6 +1003,14 @@ router.post('/refresh_token',async(req,res)=>{
             "error_message": joi_body_validation.error.stack,
             "error_data": joi_body_validation.error.details
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         res.status(200).json(message);
         return; //END
 
@@ -683,13 +1027,24 @@ router.post('/refresh_token',async(req,res)=>{
 
     let[success,result] = await verifyRefreshToken(pg_client,refresh)
     if(!success){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_internal_server",
             "error_message": result,
             "error_data": "ON verivyRefreshToken"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message)
         return;
@@ -698,13 +1053,24 @@ router.post('/refresh_token',async(req,res)=>{
      //token expired
 
     if(result =="TOKEN_EXPIRED"){ 
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_refresh_token_expired",
             "error_message": "Refresh token is expired, please re-login",
             "error_data": "ON refreshTokenCustomer"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
@@ -713,13 +1079,24 @@ router.post('/refresh_token',async(req,res)=>{
     //invalid token
 
     if(result =="INVALID_TOKEN"){
-        console.log(result);
+        
+        //Error
+        
+        console.error(result);
         const message = {
             "message": "Failed",
             "error_key": "error_refresh_token_invalid",
             "error_message": "Refresh token is invalid, please re-login",
             "error_data": "ON refreshTokenAuthor"
         };
+        //LOGGING
+        logApiBasic( 
+            `Request ${head_route_name}${request_namepath} Failed`,
+            `REQUEST GOT AT : ${time_requested} \n` +
+            "REQUEST BODY/PARAM : \n" +
+            JSON.stringify('', null, 2),
+            JSON.stringify(message, null, 2)
+        );
         pg_client.release();
         res.status(200).json(message);
         return; //END
